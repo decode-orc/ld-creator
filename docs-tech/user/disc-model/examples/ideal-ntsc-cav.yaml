@@ -1,0 +1,21 @@
+# Ideal NTSC CAV disc at the inner programme radius.
+# Every omitted block takes its ideal default (see ../project-file-schema.md).
+
+project:
+  name: IdealNtscCav
+  version: "1.0"
+  description: Ideal NTSC CAV disc at the inner programme radius
+
+input:
+  video_path: "{output}/ntsc_cav.cvbs"
+
+disc_cutter:
+  format: cav
+  # IEC 60857 4.11: the programme area starts at >= 55 mm.
+  start_radius_mm: 55.0
+  # (145 - 55) mm / 54 000 frames of a one-sided NTSC CAV disc (CVBS spec,
+  # file-size table); inside IEC 60857 4.15 (1.4-2.0 um).
+  track_pitch_um: 1.6667
+
+output:
+  rf_path: "{output}/ideal_ntsc_cav.s16"

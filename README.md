@@ -54,6 +54,7 @@ scripts/              Round-trip runners and analysis utilities
 docs/                 MkDocs sources for the published user documentation
 docs-tech/design/     High-level design specification
 docs-tech/user/       Feature notes and implementation plans
+docs-tech/user/disc-model/  Physical disc model: stage notes, parameter register, project schema
 docs-tech/*-specification*/  Specification submodules (CVBS format, analogue video, LaserVision)
 flake.nix             Nix build, dev shell, and pinned videosynth / ld-decode
 ```

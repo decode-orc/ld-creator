@@ -12,35 +12,74 @@ ld-creator converts a CVBS recording and its associated media into the RF
 signal a LaserVision player would recover from a disc mastered to
 IEC 60856 (PAL) or IEC 60857 (NTSC).
 
+It does this by modelling the life of a real disc as a pipeline of physical
+stages: signal processing at the mastering facility, the laser beam
+recorder, replication, the player's mechanics, optics and front end, and the
+capture device (§3).
+
 It is one stage of a known-truth measurement loop for ld-decode:
 
 ```
             truth                          RF                        decoded
 videosynth ───────► ld-creator ─────────────────────► ld-decode ───────────► compare
- (CVBS, WAV, EFM)   (this repo)   (.s16 / .lds / .ldf)               (CVBS, WAV, EFM)
+ (CVBS, WAV, EFM)   (this repo)          (.s16)                      (CVBS, WAV, EFM)
      │                                                                          ▲
      └──────────────────────────────── truth ───────────────────────────────────┘
 ```
 
-Because videosynth's output is exact and ld-creator follows the standards,
-any difference between the truth and ld-decode's output is attributable to the
-decode chain (or, where the standard allows latitude, to a documented
-ld-creator modelling choice).
+Because videosynth's output is exact and every ld-creator stage follows a
+cited source, any difference between the truth and ld-decode's output is
+attributable to the decode chain, or to a documented ld-creator modelling
+choice (each recorded in the stage notes and the parameter register,
+[../user/disc-model/](../user/disc-model/README.md)).
 
-### 1.1 Non-goals
+### 1.1 Scope and non-goals
 
-- Modelling a specific player's optics, servo or tracking behaviour beyond the
-  measurement conditions of IEC 60856/60857 §11.
-- Disc-surface impairments (dropouts, noise). Those are injected upstream by
-  videosynth into the CVBS so that the truth already contains them; a later
-  RF-domain impairment stage may be added as a separate, optional stage.
-- Decoding. ld-creator never demodulates RF.
+In scope:
+
+- The physical disc chain, from the video signal to the captured RF samples,
+  stage by stage (§3).
+- **Disc and RF-domain impairments**: effects of mastering, replication,
+  disc mechanics, readout optics, the player front end and the capture
+  device, each added as a separate, deterministic, documented stage setting.
+  This includes **physical dropouts** (disc defects), which belong to
+  ld-creator as an RF-domain impairment so that a decoder's RF dropout
+  detection can be measured.
+
+Non-goals:
+
+- Modelling a specific player's servo or tracking dynamics. Only their
+  residual effects within the limits of IEC 60856/60857 §4 and §12 are in
+  scope.
+- **CVBS-domain impairments.** These stay in videosynth, which puts them in
+  the truth. Round-trip inputs do not use videosynth's `laserdisc.channel`
+  impairments or its CVBS dropouts, so that disc effects come only from
+  ld-creator.
+- Decoding. ld-creator never demodulates RF (the analysis scripts in
+  `scripts/` estimate frequency for verification only).
 
 ---
 
 ## 2. External interfaces
 
-### 2.1 Inputs — *designed*
+### 2.1 Project file — *designed*
+
+A run is described by a **YAML project file**, as in videosynth. It holds
+every input, every stage parameter, every seed and the output, so the
+project file and the media it names determine the RF byte for byte. The
+schema is in
+[../user/disc-model/project-file-schema.md](../user/disc-model/project-file-schema.md).
+
+- Each pipeline stage has its own block. An omitted block or key takes the
+  stage's documented ideal value.
+- `input`, `disc_cutter` and `output` are required. The standard gives ranges,
+  not nominal values, for disc format, radius and pitch, so these have no
+  default.
+- Parsing is strict. Unknown keys and out-of-range values are errors. Values
+  outside an IEC tolerance are errors unless their key path is listed in
+  `allow_out_of_tolerance`.
+
+### 2.2 Inputs — *designed*
 
 All inputs follow the CVBS file format specification
 (`docs-tech/cvbs-file-format-specification/docs/index.md`).
@@ -52,71 +91,90 @@ All inputs follow the CVBS file format specification
 | EFM digital audio | `<base>.efm` (T3–T11 t-value stream) + `<base>.efm.meta` | CVBS spec, `extensions/efm-extension-format.md` |
 
 - The video standard (PAL / NTSC) is taken from the `.meta` video standard
-  preset; ld-creator does not accept a conflicting override.
+  preset; ld-creator does not accept a conflicting override. NTSC is the first
+  standard implemented.
+- Video sample encodings: `CVBS_U10_4FSC`, `CVBS_U16_4FSC`, `CVBS_S16_4FSC` and
+  `CVBS_TPG21_4FSC`. Values below sync tip (the LaserVision VBI burst) are
+  carried through.
 - Y/C (`.cvbsy`/`.cvbsc`) input is out of scope: a LaserDisc records composite.
 - The EFM extension's t-value stream is the natural input to the EFM pulse
   generator — no CIRC or EFM *encoding* is needed in ld-creator; videosynth
   already produces the channel-bit-level t-values.
 - Audio channel pair 1 maps to analogue channels I (left) and II (right).
 
-### 2.2 Output — *designed*
+### 2.3 Outputs — *designed*
 
-A single real-valued RF sample stream in a format ld-decode reads natively
-(ld-decode `lddecode/fileio.py`):
+| Output | Description |
+|--------|-------------|
+| `<name>.s16` | Signed 16-bit little-endian mono RF at 40 MHz, ld-decode's default rate. With the default DomesdayDuplicator capture profile, each word is a 10-bit ADC code *c* stored as (c − 512) × 64, exactly as an uncompressed DomesdayDuplicator capture |
+| `<name>.resolved.yaml` | The **resolved project**: every key with its effective value, the ld-creator version, and SHA-256 hashes of the input media and the RF. Running it reproduces the RF byte for byte |
+| Diagnostic taps | Optional per-stage data declared in the project's `diagnostics:` block. They never change the RF |
 
-| Format | Description | Notes |
-|--------|-------------|-------|
-| `.s16` | Signed 16-bit little-endian, mono | First target: simplest, lossless |
-| `.lds` | 10-bit packed | DomesdayDuplicator capture format |
-| `.ldf` | FLAC-compressed `.lds`-domain samples | Large-file convenience |
+`.lds` and `.ldf` output may be added later; ld-decode reads `.s16` directly.
 
-- Default sample rate: **40 MHz**, ld-decode's default `--inputfreq`. Other
-  rates are possible but require the matching `--inputfreq` at decode time.
-- A sidecar (format TBD) records the generation parameters (standard, rate,
-  carrier calibration, seed, ld-creator version, input hashes) so a round trip
-  is reproducible from its outputs alone.
-
-### 2.3 Command line — *implemented (skeleton only)*
+### 2.4 Command line — *implemented (skeleton only)*
 
 `src/main.cpp`, `src/cli/command_line.cpp`. Implemented options: `--help`,
-`--version`, `--log-level`, `--log-file`. Input/output options arrive with the
-pipeline. User reference: `docs/reference/cli-options.md`.
+`--version`, `--log-level`, `--log-file`. User reference:
+`docs/reference/cli-options.md`.
+
+Designed: `--project`, `--validate`, `--output-root` and `--threads`, matching
+videosynth. No command-line option may change the output.
 
 ---
 
 ## 3. Signal model — *designed*
 
-The recorded signal is a **frequency-modulated main carrier** (video), onto
-which the **audio subcarriers** and the **EFM signal** are added by
-**symmetrical double-edge pulse-width modulation** of the main carrier — i.e.
-they shift the zero crossings of the limited FM carrier rather than being
-summed linearly into the RF.
+### 3.1 Pipeline
 
-### 3.1 Video path
+Each stage consumes one documented data representation and produces the
+next. Each has a stage note under
+[../user/disc-model/](../user/disc-model/README.md) that cites the source of
+every equation and value, and a row in the parameter register for every
+parameter.
 
-```
-CVBS samples → level normalisation → group-delay pre-distortion → video pre-emphasis → FM modulator
-```
+| # | Stage (module) | Physical process | Status |
+|---|----------------|------------------|--------|
+| S1 | `cvbs_input` | Programme source: CVBS to IRE at 4fsc | designed |
+| S2 | `video_rate_converter` | Resampling to the modelling rate | designed |
+| S3 | `group_delay_predistorter` | §9.1.7 group-delay pre-distortion | designed |
+| S4 | `video_pre_emphasis` | §9.2.4 pre-emphasis | designed |
+| S5 | `fm_phase_modulator` | §9.2 FM: carrier phase | designed |
+| S6 | `recording_signal_combiner` | §7.2.1 / Amd 2 §13.1.5 PWM of audio and EFM (video only: pass-through) | designed |
+| S7 | `recording_limiter` | Binary cut: pit-edge times | designed |
+| S8 | `disc_cutter` | Laser beam recorder: time → track position (§4.7, §4.15) | designed |
+| S9 | `disc_replicator` | Master → stamper → pressed disc | designed |
+| S10 | `playback_mechanics` | Spindle and tracking: playback time → track position | designed |
+| S11 | `optical_readout` | §11.1 reference optics: pits → photocurrent | designed |
+| S12 | `player_front_end` | Photodiode, preamplifier (§11.2); diagnostic MTF equaliser | designed |
+| S13 | `rf_capture` | Capture device (DomesdayDuplicator by default) | designed |
+| S14 | `rf_sample_writer` | `.s16` and resolved project | designed |
+
+Pit edges are carried as exact event lists from S7 to S10, and the readout
+(S11) turns them back into a waveform at an 80 MHz readout rate, above twice
+the optical cut-off at every radius. With every stage at its ideal setting,
+the pipeline describes a disc nominal in every IEC parameter, read by the
+IEC §11 reference system and captured by a noiseless DomesdayDuplicator.
+
+### 3.2 Video path
+
+S1 → S5. Parameters per standard:
 
 | Parameter | PAL (IEC 60856) | NTSC (IEC 60857) |
 |-----------|-----------------|------------------|
 | Modulation | FM, positive (§9.2.1) | FM, positive (§9.2.1) |
 | Blanking-level carrier | 7.1 MHz ± 50 kHz (§9.2.2) | 8.1 MHz ± 50 kHz (§9.2.2) |
 | Deviation | Blanking → +100 % white: 800 ± 20 kHz (§9.2.3) | Sync tip (−40 IRE) → white (+100 IRE): 1.7 MHz ± 35 kHz (§9.2.3) |
-| Pre-emphasis | §9.2.4, Figure 12 | §9.2.4, Figure 9 |
-| Group-delay pre-distortion | §9.1.6, Figure 11 (0.5–4.8 MHz) | §9.1.6 (0.5–4.2 MHz) |
+| Pre-emphasis | §9.2.4, Figure 12 | §9.2.4, Figure 9: (1 + jωt₁)/(1 + jωt₂), t₁ = 320 ± 8 ns, t₂ = 120 ± 2 ns |
+| Group-delay pre-distortion | §9.1.6, Figure 11 (0.5–4.8 MHz) | §9.1.7, Figure 8 (0.5–4.2 MHz) |
 | Pilot burst | 3.75 MHz (240 fH) on sync level (§9.1.2) — present in the CVBS from videosynth | — |
 
-- Level normalisation uses the sample-encoding preset's sync/blanking/white
-  mapping from the CVBS `.meta`; nothing is assumed about the integer range.
-- The modulator integrates instantaneous frequency to phase at the output
-  rate (or an oversampled rate followed by a decimating filter) with
-  double-precision phase accumulation, so carrier phase is deterministic.
+The NTSC values and their derivations are in the S3–S5 notes.
 
-### 3.2 Analogue audio path
+### 3.3 Analogue audio path
 
 ```
-WAV (48 kHz) → [optional CX compression, §8.4/App. B] → pre-emphasis (§8.3) → resample → FM subcarrier → PWM onto main carrier
+WAV (48 kHz) → [optional CX compression, §8.4/App. B] → pre-emphasis (§8.3) → resample → FM subcarrier → PWM in S6
 ```
 
 | Parameter | PAL (IEC 60856 §8) | NTSC (IEC 60857 §8) |
@@ -129,10 +187,10 @@ WAV (48 kHz) → [optional CX compression, §8.4/App. B] → pre-emphasis (§8.3
 - Subcarrier frequencies are derived from fH (line-locked), not rounded
   constants.
 
-### 3.3 EFM path
+### 3.4 EFM path
 
 ```
-.efm t-values → NRZ channel bits at 4.3218 Mbit/s → low-pass + high-pass + pre-emphasis (Amendment 2 §13.1) → PWM onto main carrier
+.efm t-values → NRZ channel bits at 4.3218 Mbit/s → low-pass + high-pass + pre-emphasis (Amendment 2 §13.1) → PWM in S6
 ```
 
 - Filters per IEC 60856/60857 Amendment 2 §13.1.2 (low-pass −3 dB at
@@ -145,15 +203,12 @@ WAV (48 kHz) → [optional CX compression, §8.4/App. B] → pre-emphasis (§8.3
 - Channel-bit clock relationship to video: the EFM stream is not line-locked;
   the frame index in `.efm.meta` aligns it to video frames.
 
-### 3.4 Pulse-width combination
+### 3.5 Pulse-width combination
 
-The final RF is a limited (square-ish) FM carrier whose duty cycle is
-modulated by the sum of the audio subcarriers and the EFM signal. The
-implementation models this as slicing the FM carrier's phase against a
-threshold offset by the PWM signal, then band-limiting to the player's
-nominal RF bandwidth before quantisation. The exact band-limiting model
-(and whether to model the optical MTF of §11) is an **open question**
-affecting what ld-decode is measured against.
+Audio and EFM shift the zero crossings of the limited FM carrier
+(symmetrical double-edge PWM, §7.2.1) rather than being summed linearly into
+the RF. S6 forms a slice level *s*(t) from them, and S7 places pit edges where
+`cos φ(t) = s(t)`. With video only, *s* ≡ 0.
 
 ---
 
@@ -164,16 +219,26 @@ Implemented modules are marked ✔; the rest are planned.
 | Module | Directory | Responsibility |
 |--------|-----------|----------------|
 | ✔ cli | `src/cli/`, `include/ld_creator/cli/` | Command-line parsing and usage text |
-| cvbs_input | `src/cvbs_input/` | Read `.cvbs` fields and `.meta`; expose level mapping |
+| project | `src/project/` | Project YAML loading, validation, ideal defaults, resolved-project writing |
+| cvbs_input | `src/cvbs_input/` | S1: read `.cvbs` and `.meta`, convert to IRE |
 | audio_input | `src/audio_input/` | Read WAV channel pairs |
 | efm_input | `src/efm_input/` | Read `.efm` t-values and `.efm.meta` frame index |
-| dsp | `src/dsp/` | Shared FIR/IIR filters, resamplers, NCO |
-| video_modulation | `src/video_modulation/` | §3.1 |
-| audio_modulation | `src/audio_modulation/` | §3.2 |
-| efm_modulation | `src/efm_modulation/` | §3.3 |
-| rf_combiner | `src/rf_combiner/` | §3.4 |
-| rf_output | `src/rf_output/` | `.s16` / `.lds` / `.ldf` writers and parameter sidecar |
-| pipeline | `src/pipeline/` | Field-by-field orchestration, threading, determinism |
+| dsp | `src/dsp/` | Shared filters and resamplers |
+| video_rate_converter | `src/video_rate_converter/` | S2 |
+| group_delay_predistorter | `src/group_delay_predistorter/` | S3 |
+| video_pre_emphasis | `src/video_pre_emphasis/` | S4 |
+| fm_phase_modulator | `src/fm_phase_modulator/` | S5 |
+| recording_signal_combiner | `src/recording_signal_combiner/` | S6 (audio and EFM sources later) |
+| recording_limiter | `src/recording_limiter/` | S7 |
+| disc_cutter | `src/disc_cutter/` | S8 |
+| disc_replicator | `src/disc_replicator/` | S9 |
+| playback_mechanics | `src/playback_mechanics/` | S10 |
+| optical_readout | `src/optical_readout/` | S11 |
+| player_front_end | `src/player_front_end/` | S12 |
+| rf_capture | `src/rf_capture/` | S13 |
+| rf_sample_writer | `src/rf_sample_writer/` | S14 |
+| diagnostics | `src/diagnostics/` | Diagnostic tap sinks |
+| pipeline | `src/pipeline/` | Block-based orchestration, threading, determinism |
 
 All modules are built into the `ld_creator_core` library; `src/main.cpp` is
 the only source outside it. Modules depend on interfaces (`I`-prefixed) and
@@ -186,21 +251,27 @@ receive dependencies by constructor injection (TESTING.md).
 Functional tests and `scripts/` drive the loop in §1 with the pinned tools:
 
 1. Run the pinned `videosynth` on a committed project YAML into the build tree.
-2. Run `ld-creator` on its output.
+2. Run `ld-creator` on a committed ld-creator project that names that output.
 3. Run the pinned `ld-decode` on the RF.
-4. Compare decoded output against the truth: per-line video error (after
-   aligning on the CVBS frame/line origin), VBI codes, audio SNR, EFM
-   t-value / sector error counts.
+4. Compare decoded output against the truth as defined in
+   [../user/ntsc-round-trip-metrics.md](../user/ntsc-round-trip-metrics.md).
 
-Metrics and pass thresholds are to be defined per test and recorded in
-`docs-tech/user/` before implementation.
+Each disc impairment is tested by an A/B pair of ld-creator projects that
+differ in one stage block.
 
 ---
 
 ## 6. Open questions
 
-- PAL analogue/digital audio coexistence on the low band (§3.3).
-- RF band-limiting and optical MTF model (§3.4).
+- PAL analogue/digital audio coexistence on the low band (§3.4).
 - Whether ld-creator should accept videosynth's `RAW_S16_*` high-rate presets
-  directly, avoiding a 4fsc → RF-rate resample.
-- Parameter sidecar format (§2.2).
+  directly, avoiding a 4fsc → modelling-rate resample.
+- The linear readout model reaches only the lower part of the IEC 60857
+  Figure 18 HFMI band; the phase-pit model is planned to replace it
+  ([S11 note](../user/disc-model/s11-optical-readout.md)).
+- The RF keeps the readout MTF, as at a player's test point, and ld-decode
+  compensates it. At the inner CAV radius, the round-trip chroma and
+  frequency-response rows therefore test ld-decode's MTF model against S11's
+  linear model, which is itself an approximation (plan Task 10.1). The S12
+  diagnostic equaliser bisects a disagreement
+  ([metrics](../user/ntsc-round-trip-metrics.md)).

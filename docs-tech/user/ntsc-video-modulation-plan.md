@@ -62,8 +62,11 @@ output.
   - `--log-file`.
 - **One block per stage.** Each pipeline stage has its own YAML block. A
   block that is left out, or a key that is left out, takes the documented
-  **ideal** value from the parameter register. A project with only `input`
-  and `output` therefore describes the ideal disc.
+  **ideal** value from the parameter register. The exceptions are the
+  disc's format, start radius and track pitch (`disc_cutter`), for which the
+  standard gives ranges but no nominal value; they are required. A project
+  with only `input`, `disc_cutter` and `output` therefore describes the
+  ideal disc.
 - **Every run is recorded.** Each run writes a **resolved project** next to
   the RF. It contains every key with its effective value, plus the
   ld-creator version and hashes of the input media. Running that resolved
@@ -124,9 +127,13 @@ output.
   readout optics, MTF, phase-pit signal formation and crosstalk.
 - Isailović, *Videodisc and Optical Memory Systems* (1985). Covers mastering
   and replication.
-- F. Panter, *Modulation, Noise and Spectral Analysis*, p. 542, which
+- P.F. Panter, *Modulation, Noise and Spectral Analysis*, p. 542, which
   IEC 60857 §7.2.1 cites for pulse-width modulation.
-- DomesdayDuplicator hardware documentation, for the capture front end.
+- The DomesdayDuplicator repository (schematics, gain and filter test data,
+  capture format), for the capture front end.
+
+The outcome of Task 1.4 is in
+[disc-model/secondary-sources.md](disc-model/secondary-sources.md).
 
 If the sources are silent or ambiguous on a choice that changes what
 ld-decode is measured against, ask the user (AGENTS.md §12).
@@ -149,13 +156,13 @@ not change the RF.
 | S4 | `video_pre_emphasis` | Video pre-emphasis | D2 → D2 | §9.2.4: `(1+s·320 ns)/(1+s·120 ns)` | — |
 | S5 | `fm_phase_modulator` | FM modulator | D2 → **D3** carrier phase φ(t) | §9.2.1–9.2.3: 8.1 MHz at blanking, 1.7 MHz sync→white | — |
 | S6 | `recording_signal_combiner` | Adds audio/EFM pulse-width modulation (*later*) | D3 → D3 | §7.2.1; Amendment 2 §13.1.5 | Pass-through (video only) |
-| S7 | `recording_limiter` | Recorder limiter: the cut is binary | D3 → **D4** transition times | Edges at φ = (k + ½)·π (BBC RD 1986/01 §1.1) | — |
-| S8 | `disc_cutter` | Laser beam recorder: time → track position, cutting-spot exposure | D4 → **D5** cut pit map (track coordinate, edge profile) | §4.7 CAV/CLV velocity; cutting spot ≈ 0.6 µm (BBC §4) | Perfect edges, no length bias |
+| S7 | `recording_limiter` | Recorder limiter: the cut is binary | D3 → **D4** transition times | Edges at φ = (k + ½)·π (BBC RD 1986/01 §1.2) | — |
+| S8 | `disc_cutter` | Laser beam recorder: time → track position, cutting-spot exposure | D4 → **D5** cut pit map (track coordinate, edge profile) | §4.7 CAV/CLV velocity; cutting spot ≈ 0.6 µm (BBC §3.6) | Perfect edges, no length bias |
 | S9 | `disc_replicator` | Mastering → stamper → pressed disc | D5 → **D6** pressed pit map | Unsourced until Task 1.4; bounded by §12.3 HFMI and §12.1 RMI/RRI | Exact copy |
 | S10 | `playback_mechanics` | Spindle and track motion: playback time → track coordinate | D6 → **D7** scan trajectory and pits | §4.7 speed, §4.18 eccentricity, §4.16 vertical deviation | Perfect concentric track at nominal speed |
-| S11 | `optical_readout` | Spot scans the pits; detector photocurrent | D7 → **D8** photocurrent i(t) | §11.1 (λ 632.8 nm, NA 0.40, 23 % rim); linear MTF first, phase-pit model later (Bouwhuis) | IEC §11 reference optics; adjacent tracks blank |
-| S12 | `player_front_end` | Photodiode, preamplifier, player RF path | D8 → **D9** player RF | §11.2 "adequate bandwidth"; BBC Fig. 8 for a real player | IEC §11.2 flat response, noiseless |
-| S13 | `rf_capture` | Capture device: anti-alias filter, sampling, quantisation | D9 → **D10** RF samples | DomesdayDuplicator documentation (unsourced until obtained) | Band-limit at Nyquist, 16-bit |
+| S11 | `optical_readout` | Spot scans the pits; detector photocurrent | D7 → **D8** photocurrent i(t) at 80 MHz | §11.1 (λ 632.8 nm, NA 0.40, 23 % rim); linear MTF first, phase-pit model later (Bouwhuis) | IEC §11 reference optics; adjacent tracks blank |
+| S12 | `player_front_end` | Photodiode, preamplifier, player RF path (test point) | D8 → **D9** player RF | §11.2 "adequate bandwidth"; BBC Fig. 8 for a real player; Isailović 1985 §3.4 for the diagnostic equaliser | IEC §11.2 flat response, noiseless, unequalised |
+| S13 | `rf_capture` | Capture device: anti-alias filter, sampling, quantisation | D9 → **D10** RF samples | DomesdayDuplicator schematics and test data | DomesdayDuplicator profile, noiseless (`ideal` profile for A/B) |
 | S14 | `rf_sample_writer` | File output and resolved project | D10 → `.s16` (+ resolved project YAML) | ld-decode input interface | — |
 
 **Pit-edge representation.** D4–D7 carry pit **edges** as event lists in
@@ -168,7 +175,7 @@ its derivation lives in S11's stage note.
 
 **Ideal disc.** With every stage at its ideal setting, the pipeline describes
 a disc that is nominal in every IEC parameter, read by the IEC §11 reference
-system. This baseline still includes the reading spot's readout loss,
+system and captured by a noiseless DomesdayDuplicator. This baseline still includes the reading spot's readout loss,
 because no disc can be read without it. Each impairment phase then adds one
 physical effect, which is measured with an A/B comparison against this
 baseline.
@@ -268,7 +275,8 @@ At minimum:
 - How should IEC tolerances be overridden in sweep projects? For example, an
   explicit `allow_out_of_tolerance` flag on each key.
 
-**Acceptance:** answers are recorded in the relevant stage notes.
+**Acceptance:** answers are recorded in the relevant stage notes. The decisions are summarised in
+[disc-model/README.md](disc-model/README.md#decisions).
 
 ### Task 1.7 — Project file schema
 - Design the project YAML, following videosynth's conventions:
@@ -438,24 +446,39 @@ Derive the following in S11's note, from §11.1 and Bouwhuis:
 - the transfer function, with cut-off `2·NA/λ`;
 - the effect of the 23 % rim intensity.
 
-Rendering: `i(t) = i₀ + Σₖ ±Δ·ESF(x(t) − xₖ)`, evaluated at the output
-sample instants. The table resolution comes from a stated error bound.
+Rendering: `i(τ) = 1 − m·Σₖ σₖ·ESF(x(τ) − xₖ)`, evaluated at the 80 MHz
+readout rate derived in S11's note (above twice the optical cut-off at every
+radius). The table resolution comes from a stated error bound. Also bound the
+error of the infinitely-wide-pit approximation by computing the
+two-dimensional linear transfer for a 0.8 µm pit.
 
 **Acceptance:**
 - Unit tests match the analytic transfer function.
 - A constant-frequency pit train gives the modulation depth the model
   predicts.
-- Predicted HFMI falls inside the §12.3 / Figure 18 limits; if it does not,
-  the shortfall is recorded as a finding about the linear model.
+- Predicted HFMI falls inside the §12.3 / Figure 18 limits. (S11's note
+  already shows the linear model is limited to HFMI ≤ 0.272, the lower part
+  of the band; the default uses that limit.)
 
-### Task 5.3 — Ideal front end and capture (S12, S13)
-- The ideal front end follows §11.2 ("adequate bandwidth", flat).
-- Capture applies a documented anti-alias band-limit below 20 MHz before
-  sampling at 40 MHz. The outer-radius CAV optical cut-off (~34.5 MHz)
-  exceeds Nyquist, so this is required, not optional.
-- Quantise to 16 bits with documented headroom.
-- **Acceptance:** above Nyquist, the spectrum is down by the documented
-  amount. No clipping on any test pattern.
+### Task 5.3 — Front end and capture (S12, S13)
+- The reference front end follows §11.2 ("adequate bandwidth", flat).
+- `mtf_equaliser: none` (the default) passes D8 unchanged. The diagnostic
+  `inverse` equaliser follows S12's note, computed from the D7 edges with the
+  band-limited edge response.
+- The DomesdayDuplicator capture profile, per S13's note:
+  - extract the anti-alias filter's netlist from the schematic and compute
+    its transfer function from the nominal component values;
+  - AC coupling, the reference level (75 % of full scale) and 10-bit
+    quantisation;
+  - sample at 40 MHz by exact decimation of the 80 MHz readout rate.
+- The `ideal` profile: the linear-phase anti-alias filter and 16-bit
+  quantiser specified in S13's note. The outer-radius CAV optical cut-off
+  (~34.5 MHz) exceeds Nyquist, so both profiles need their filter.
+- **Acceptance:**
+  - The computed DdD response matches the measured table (spreadsheet
+    sheet 1) within the bound that the 5 % capacitor tolerance gives.
+  - Above 20 MHz, each profile's response is down by its documented amount.
+  - No clipping on any test pattern at the default level.
 
 ### Task 5.4 — End-to-end pipeline
 - Wire S1–S14 together. Disc type and start radius come from the S8
@@ -504,7 +527,9 @@ raised as an open item.
 ## Phase 7 — Round trip on the ideal disc
 
 ### Task 7.1 — videosynth project
-- Commit a 100-frame NTSC CAV project to `tests/functional/`, with:
+- Commit a 100-frame NTSC CAV project to `tests/functional/` (50 lead-in
+  frames, then 50 programme frames, as defined in the metrics document),
+  with:
   - `CVBS_S16_4FSC` encoding (the VBI burst dips below sync tip);
   - `laserdisc.vbi_burst: true`;
   - `placement: laserdisc` VITS: `virs` on 19/282, `ntc7-composite` on 20,
@@ -523,7 +548,9 @@ raised as an open item.
 - A script that runs these steps into the build tree only:
   1. videosynth;
   2. ld-creator;
-  3. `ld-decode --NTSC`;
+  3. `ld-decode --NTSC` with its defaults for disc RF, which keeps the
+     readout MTF. Add `-m 0` for RF with no MTF to compensate (the carrier
+     diagnostic and the S12 diagnostic equaliser); see the metrics document;
   4. the comparator from Task 1.5.
 
   Tool versions are logged.

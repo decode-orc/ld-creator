@@ -1,0 +1,57 @@
+# Every key in the schema, at its default where it has one.
+# The resolved project of ideal-ntsc-cav.yaml looks like this, plus a
+# resolved: block.
+
+project:
+  name: AllKeys
+  version: "1.0"
+  description: Every project key, at its default where it has one
+
+input:
+  video_path: "{output}/ntsc_cav.cvbs"
+  first_frame: 0
+  frame_count: 100
+
+group_delay_predistorter:
+  enabled: true
+  delay_ns: [[0.5, 0], [2.0, -15], [3.0, -45], [3.58, -80], [4.0, -135], [4.2, -200]]
+
+video_pre_emphasis:
+  t1_ns: 320
+  t2_ns: 120
+
+fm_phase_modulator:
+  blanking_hz: 8100000
+  deviation_hz: 1700000
+  initial_phase_rad: 0.0
+
+disc_cutter:
+  format: cav
+  start_radius_mm: 55.0
+  track_pitch_um: 1.6667
+
+optical_readout:
+  numerical_aperture: 0.40
+  rim_intensity: 0.23
+  hfmi: 0.272
+
+player_front_end:
+  profile: iec_reference
+  mtf_equaliser: none
+
+rf_capture:
+  profile: domesday_duplicator
+  level_fraction: 0.75
+
+output:
+  rf_path: "{output}/all_keys.s16"
+  mode: disc
+
+diagnostics:
+  taps:
+    - stage: fm_phase_modulator
+      path: "{output}/taps/phase"
+      first_frame: 10
+      frame_count: 1
+
+allow_out_of_tolerance: []
