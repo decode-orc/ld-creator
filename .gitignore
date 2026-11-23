@@ -1,0 +1,143 @@
+# C/C++ and CMake build directories
+build/
+build-*/
+cmake-build-*/
+out/
+bin/
+lib/
+lib64/
+obj/
+objs/
+
+# CMake and build system generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+DartConfiguration.tcl
+Testing/
+Makefile
+install_manifest.txt
+build.ninja
+.ninja_deps
+.ninja_log
+
+# Generated binaries and libraries
+*.o
+*.obj
+*.lo
+*.la
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.lib
+*.exe
+*.out
+*.app
+# Preprocessor output only. Do not broaden this to "*.i*" — that also swallows
+# every "*.in" template (the version header, the AppStream metainfo), which
+# then silently never reaches a CI checkout.
+*.i
+*.ii
+
+# Debug and profiler output
+*.dSYM/
+*.pdb
+*.idb
+*.stackdump
+*.gcda
+*.gcno
+*.gcov
+*.prof
+*.profraw
+*.profdata
+*.dmp
+
+# Test artifacts and reports
+*.xml
+*.tap
+*.trs
+*.log
+*.tmp
+*.cache
+coverage/
+coverage-*/
+htmlcov/
+*.lcov
+*.info
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python packaging/build artifacts
+.Python
+python-build/
+dist/
+site/
+*.egg
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Python virtual environments and tooling
+.venv/
+venv/
+env/
+ENV/
+.tox/
+.nox/
+.pytest_cache/
+.mypy_cache/
+.pyre/
+.pytype/
+.ruff_cache/
+.hypothesis/
+.ipynb_checkpoints/
+
+# Python lock and local env files
+.python-version
+.env
+.env.*
+*.env
+
+# AI artifacts
+memory/
+
+# Common editor/OS artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Nix and local results
+result
+result-*
+
+# Generated media: CVBS inputs, audio, EFM and RF. Never committed; tests and
+# scripts write it beneath the build directory.
+*.cvbs
+*.cvbsy
+*.cvbsc
+*.meta
+*.wav
+*.efm
+*.s16
+*.u16
+*.r16
+*.u8
+*.r8
+*.lds
+*.ldf
+*.raw.oga
+*.tbc
+
+# Local scratch output directory
+/output/

@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clang-format:
+    name: Clang-Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v19
+
+      - name: Setup Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v7
+        with:
+          # The GitHub Actions cache is enough here and needs no account.
+          use-flakehub: false
+
+      - name: Check formatting
+        run: |
+          nix develop "path:$PWD" --command bash -c '
+          FAIL_COUNT=0
+          for f in $(find include src tests -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \)); do
+            if ! clang-format -style=file --dry-run --Werror "$f"; then
+              echo "::error file=$f::Code formatting violation"
+              FAIL_COUNT=$((FAIL_COUNT + 1))
+            fi
+          done
+          if [ $FAIL_COUNT -gt 0 ]; then
+            echo "::error::$FAIL_COUNT file(s) have formatting issues"
+            exit 1
+          fi
+          '
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: clang-format
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v19
+
+      - name: Setup Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v7
+        with:
+          use-flakehub: false
+
+      - name: Configure
+        run: nix develop "path:$PWD" --command cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build tests
+        run: nix develop "path:$PWD" --command cmake --build build --target ld_creator_tests
+
+      - name: Run unit tests
+        run: nix develop "path:$PWD" --command ctest --test-dir build --output-on-failure -L unit
+
+  functional-tests:
+    name: Functional Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v19
+
+      - name: Setup Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v7
+        with:
+          use-flakehub: false
+
+      - name: Configure
+        run: nix develop "path:$PWD" --command cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build tests
+        run: nix develop "path:$PWD" --command cmake --build build --target ld_creator_tests
+
+      - name: Run functional tests
+        run: nix develop "path:$PWD" --command ctest --test-dir build --output-on-failure -L functional
+
+  nix-package:
+    name: Nix Package
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v19
+
+      - name: Setup Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v7
+        with:
+          use-flakehub: false
+
+      - name: Build package and docs
+        run: nix build "path:$PWD#ld-creator" "path:$PWD#docs" --print-build-logs
