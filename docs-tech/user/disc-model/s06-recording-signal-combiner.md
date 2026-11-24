@@ -61,7 +61,8 @@ Pass-through (video only).
 
 ## Verification
 
-Identity unit test: D3 out equals D3 in.
+Identity unit test (`tests/unit/test_recording_signal_combiner.cpp`): D3
+out equals D3 in.
 
 ## Diagnostic tap
 

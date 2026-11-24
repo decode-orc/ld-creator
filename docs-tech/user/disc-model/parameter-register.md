@@ -104,6 +104,8 @@ amendment to it.
 |----|------|-------|-----------|------|--------|--------|-------------|
 | S7.edge_budget | Edge-time error budget (S2 + S5 + S7) | 4 | — | ps | [S7](s07-recording-limiter.md): δf = 2f²δt ≤ 0.1 IRE at 12.15 MHz | derived | fixed |
 | S7.pit_polarity | Pit half-cycle | cos φ > s | — | — | [S7](s07-recording-limiter.md) | declared | fixed |
+| S7.root_solver | Edge solver | Newton in the interval bracket, bisection fallback; stops at a step of 2ε in u or 64 iterations | < 10⁻²³ s | — | [S7](s07-recording-limiter.md) | derived | fixed |
+| S7.monotone_slope_ratio | Largest end slope of a monotone Hermite segment, relative to its secant | 3 | — | — | Fritsch & Carlson 1980; [S7](s07-recording-limiter.md) | sourced | fixed |
 
 ## S8 — Disc cutter
 

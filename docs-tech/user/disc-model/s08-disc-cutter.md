@@ -75,6 +75,13 @@ The exposure model (spot profile, resist threshold, and the resulting pit
 length bias and edge slope) is Phase 8 work (plan Task 8.2). Its starting
 point is the 0.6 µm effective spot of BBC §3.6.
 
+The implementation already has the hook for it. A length bias `b`
+(register `S8.length_bias`, 0 at the ideal setting) moves each pit start
+back by b/2 and each pit end forward by b/2. Every pit is then b longer
+and every land b shorter. The cutter's completion watermark is moved back by
+|b|/2 to match. |b| must stay below the shortest pit or land, so that the
+edges stay in order; at b = 0 this always holds.
+
 The form of that model is sourced (Isailović App. 2.2). The exposure along
 and across the track is
 
@@ -149,9 +156,18 @@ Perfect spiral and perfect edges at the configured format, radius and pitch.
 
 ## Verification
 
-Unit tests (plan Task 4.3): radius after N revolutions equals `r₀ + N·p`; CLV
-arc length equals `v·t`; CAV pit spatial frequency matches the Figure 18
-formula.
+Unit tests (`tests/unit/test_disc_cutter.cpp`, plan Task 4.3):
+
+- CAV: the radius after N = 1, 100 and 54 000 revolutions is `r₀ + N·p`,
+  and each revolution's arc length is 2π times its mean radius.
+- CLV: over 1800 s, the revolutions counted independently as ∫ v/(2πr) dt
+  account for the radius gained at one pitch each, and the arc length is
+  `v·t`.
+- A constant 8.1 MHz carrier cut through S7 and S8 at 55 mm gives a CAV pit
+  spatial frequency equal to the Figure 18 formula, 782.09 pits/mm, at every
+  pit.
+- A length bias of 0.1 µm lengthens every pit and shortens every land by
+  0.1 µm.
 
 ## Diagnostic tap
 

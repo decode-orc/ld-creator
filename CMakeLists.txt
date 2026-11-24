@@ -117,6 +117,8 @@ add_library(ld_creator_core
     src/cvbs_input/cvbs_video_input.cpp
     src/diagnostics/byte_sink.cpp
     src/diagnostics/tap_writer.cpp
+    src/disc_cutter/cutting_trajectory.cpp
+    src/disc_cutter/disc_cutter.cpp
     src/dsp/fir_response.cpp
     src/dsp/kaiser_window.cpp
     src/dsp/linear_solver.cpp
@@ -133,6 +135,8 @@ add_library(ld_creator_core
     src/project/project_validator.cpp
     src/project/resolved_project.cpp
     src/project/sha256.cpp
+    src/recording_limiter/recording_limiter.cpp
+    src/recording_signal_combiner/recording_signal_combiner.cpp
     src/rf_capture/capture_quantiser.cpp
     src/rf_sample_writer/rf_sample_writer.cpp
     src/video_pre_emphasis/video_pre_emphasis.cpp

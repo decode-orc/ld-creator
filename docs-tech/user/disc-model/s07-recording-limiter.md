@@ -18,6 +18,10 @@ at which the level changes.
 - Philips Technical Review 33 (1973) p. 179 (Compaan & Kramer): the laser
   recording is a "highly non-linear" photographic process, so the recording is
   two-level only; p. 181: on average a pit occupies exactly half the track.
+- F. N. Fritsch and R. E. Carlson, "Monotone piecewise cubic
+  interpolation", *SIAM J. Numer. Anal.* 17(2) 238–246 (1980): the slope
+  condition under which a cubic Hermite segment is monotone (root finding,
+  below).
 
 ## Model and equations
 
@@ -61,7 +65,44 @@ interpolant on φ and 2πf ([S5](s05-fm-phase-modulator.md)). Fm was chosen
 so that this interpolant's error is at most 1.45 ps of edge time, 36 % of
 the budget ([S2](s02-video-rate-converter.md)). Each crossing is found by
 bracketing the target phase between samples and solving on the
-interpolant. The solver and its error are chosen in plan Task 4.2.
+interpolant:
+
+- **Bracketing.** Crossing k belongs to the interval [t_m, t_m+1] for which
+  φ_m < (k + ½)π ≤ φ_m+1. The target is always evaluated as
+  `(k + ½)·π` in double precision, so a crossing that falls exactly on a
+  sample is assigned to exactly one interval.
+- **Monotonicity.** A cubic Hermite segment is monotone when both end
+  slopes lie between 0 and 3 times the secant (Fritsch & Carlson, *SIAM J.
+  Numer. Anal.* 17 (1980) 238–246). Then each target is crossed exactly once
+  in its interval. The stage checks this in every interval and stops with an
+  error if it fails. At Fm the carrier frequency changes by well under 1 %
+  per interval, so the ratios are close to 1.
+- **Solver.** Newton's method on `φ(u) − φ_m = (k + ½)π − φ_m`, u ∈ [0, 1],
+  from the linear estimate. The bracket narrows with each iterate, and a
+  step that would leave it is replaced by bisection. The solver stops when a
+  step is below 2ε in u (2.6 × 10⁻²⁴ s), or after 64 iterations. The
+  interpolant is nearly linear, so Newton converges in 3–4 steps.
+- **Time.** `t_k = (m + u) / Fm`.
+
+**Edge-time error.** For a run of up to one hour (a full CLV side), at the
+12.15 MHz worst-case carrier:
+
+| Source | Bound |
+|--------|-------|
+| Hermite interpolant ([S2](s02-video-rate-converter.md)) | 1.45 ps |
+| D3 phase and target rounding: 2 × ½ ulp of φ ≈ 1.8 × 10¹¹ rad (3.05 × 10⁻⁵ rad) | 0.40 ps |
+| Edge time rounding: ½ ulp of 3600 s | 0.23 ps |
+| Solver | < 10⁻²³ s |
+| **Total** | **2.1 ps**, inside the 4 ps budget |
+
+Measured on a linear frequency sweep, where the interpolant is exact, the
+worst edge differs from the analytic root by 4 × 10⁻¹⁹ s. On a 9 MHz carrier
+with ±2 MHz sinusoidal FM at 1 MHz, the worst is 2.7 fs. The 1.45 ps S2 bound
+is a worst case over the whole video band, which these signals do not reach.
+
+**Slice level.** Only *s* ≡ 0 is implemented. The stage rejects a non-zero
+*s*, so that audio or EFM cannot reach it before the `cos φ = s` solver
+exists.
 
 ## Parameters
 
@@ -69,6 +110,8 @@ interpolant. The solver and its error are chosen in plan Task 4.2.
 |--------------|-------|
 | `S7.edge_budget` | 4 ps (derived) |
 | `S7.pit_polarity` | pit where cos φ > s (declared) |
+| `S7.root_solver` | Newton in the bracket, bisection fallback; 2ε step, 64 iterations |
+| `S7.monotone_slope_ratio` | 3 (Fritsch & Carlson 1980) |
 
 ## Assumptions and approximations
 
@@ -93,8 +136,15 @@ The stage is always the ideal limiter.
 
 ## Verification
 
-Unit tests (plan Task 4.2): on a constant-frequency input, edge intervals
-equal 1/(2f) within the 4 ps budget, and polarities alternate.
+Unit tests (`tests/unit/test_recording_limiter.cpp`, plan Task 4.2):
+
+- On a constant carrier at 7.614, 8.1, 9.314 and 12.15 MHz, edge intervals
+  equal 1/(2f) within the 4 ps budget, and polarities alternate. The same
+  holds for S5's output at −40, 0 and 100 IRE.
+- On a linear sweep, every edge is within the budget of the analytic root.
+- From φ = 0 the first edge is a pit end, at φ = π/2.
+- The output is identical for block sizes 1, 2, 7, 4096 and the whole run.
+- A non-zero slice level and a phase that does not increase are rejected.
 
 ## Diagnostic tap
 

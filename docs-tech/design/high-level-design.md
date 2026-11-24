@@ -154,7 +154,7 @@ project is reported as not yet runnable, with a failure status.
 
 ---
 
-## 3. Signal model — *S1–S5 implemented; S6–S13 designed*
+## 3. Signal model — *S1–S8 implemented; S9–S13 designed*
 
 ### 3.1 Pipeline
 
@@ -171,9 +171,9 @@ parameter.
 | S3 | `group_delay_predistorter` | §9.1.7 group-delay pre-distortion | implemented |
 | S4 | `video_pre_emphasis` | §9.2.4 pre-emphasis | implemented |
 | S5 | `fm_phase_modulator` | §9.2 FM: carrier phase | implemented |
-| S6 | `recording_signal_combiner` | §7.2.1 / Amd 2 §13.1.5 PWM of audio and EFM (video only: pass-through) | designed |
-| S7 | `recording_limiter` | Binary cut: pit-edge times | designed |
-| S8 | `disc_cutter` | Laser beam recorder: time → track position (§4.7, §4.15) | designed |
+| S6 | `recording_signal_combiner` | §7.2.1 / Amd 2 §13.1.5 PWM of audio and EFM (video only: pass-through) | implemented (pass-through) |
+| S7 | `recording_limiter` | Binary cut: pit-edge times | implemented |
+| S8 | `disc_cutter` | Laser beam recorder: time → track position (§4.7, §4.15) | implemented |
 | S9 | `disc_replicator` | Master → stamper → pressed disc | designed |
 | S10 | `playback_mechanics` | Spindle and tracking: playback time → track position | designed |
 | S11 | `optical_readout` | §11.1 reference optics: pits → photocurrent | designed (transfer function H implemented, used for the `hfmi` default) |
@@ -194,6 +194,10 @@ Pit edges are carried as exact event lists from S7 to S10, and the readout
 the optical cut-off at every radius. With every stage at its ideal setting,
 the pipeline describes a disc nominal in every IEC parameter, read by the
 IEC §11 reference system and captured by a noiseless DomesdayDuplicator.
+
+S6–S8 are implemented and unit tested, but no run reaches them yet: a disc
+run needs S9–S13 as well (plan Task 5.4), so a carrier-diagnostic run is
+still the only one that writes RF.
 
 ### 3.2 Video path
 
@@ -264,6 +268,19 @@ Audio and EFM shift the zero crossings of the limited FM carrier
 the RF. S6 forms a slice level *s*(t) from them, and S7 places pit edges where
 `cos φ(t) = s(t)`. With video only, *s* ≡ 0.
 
+Their realisations, from the S6–S8 notes:
+
+- S6: a pass-through. Audio and EFM sources will implement the same
+  interface by setting *s*.
+- S7: each crossing φ = (k + ½)π is solved on the S5 Hermite interpolant by
+  Newton's method inside the interval's bracket, with a bisection fallback.
+  The stage checks that the interpolant is monotone in every interval, and
+  rejects a non-zero *s* until audio or EFM exists.
+- S8: closed-form CAV and CLV spirals (`CuttingTrajectory`), which the
+  project validator also uses for the §4.12 end-radius check. A length-bias
+  hook, zero at the ideal setting, waits for the exposure model (plan
+  Task 8.2).
+
 ---
 
 ## 4. Module layout
@@ -284,9 +301,9 @@ Implemented modules are marked ✔; the rest are planned.
 | ✔ video_pre_emphasis | `src/video_pre_emphasis/` | S4 |
 | ✔ fm_phase_modulator | `src/fm_phase_modulator/` | S5 |
 | ✔ carrier_diagnostic | `src/carrier_diagnostic/` | `output.mode: carrier_diagnostic`: `cos φ` at 40 MHz |
-| recording_signal_combiner | `src/recording_signal_combiner/` | S6 (audio and EFM sources later) |
-| recording_limiter | `src/recording_limiter/` | S7 |
-| disc_cutter | `src/disc_cutter/` | S8 |
+| ✔ recording_signal_combiner | `src/recording_signal_combiner/` | S6: video-only pass-through (audio and EFM sources later) |
+| ✔ recording_limiter | `src/recording_limiter/` | S7 |
+| ✔ disc_cutter | `src/disc_cutter/` | S8: cutting trajectory and cutter |
 | disc_replicator | `src/disc_replicator/` | S9 |
 | playback_mechanics | `src/playback_mechanics/` | S10 |
 | optical_readout | `src/optical_readout/` | S11 (✔ readout transfer function) |

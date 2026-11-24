@@ -16,6 +16,7 @@
 #include <set>
 #include <string>
 
+#include "ld_creator/disc_cutter/cutting_trajectory.h"
 #include "ld_creator/optical_readout/readout_transfer.h"
 #include "ld_creator/project/number_format.h"
 #include "ld_creator/standards/ntsc_timing.h"
@@ -444,21 +445,12 @@ std::int64_t EffectiveFrameCount(const InputConfig& input,
   return std::max<std::int64_t>(file_frame_count - input.first_frame, 0);
 }
 
+// The radius at the end of the run, from the S8 cutting trajectory.
 double EndRadiusMm(const DiscCutterConfig& cutter, std::int64_t frame_count) {
-  constexpr double kMetresPerMm = 1e-3;
-  constexpr double kMetresPerUm = 1e-6;
-  const double r0 = cutter.start_radius_mm * kMetresPerMm;
-  const double pitch = cutter.track_pitch_um * kMetresPerUm;
-  const auto frames = static_cast<double>(frame_count);
-  if (cutter.format == DiscFormat::kCav) {
-    // S8 note: r(t) = r0 + p·fr·t, so N revolutions add N pitches.
-    return (r0 + pitch * frames) / kMetresPerMm;
-  }
-  // S8 note: r(t) = √(r0² + p·v·t/π).
-  const double velocity = cutter.linear_velocity_m_s.value_or(0.0);
-  const double duration_s = frames / ntsc::kFrameRateHz;
-  return std::sqrt(r0 * r0 + pitch * velocity * duration_s / std::numbers::pi) /
-         kMetresPerMm;
+  constexpr double kMmPerMetre = 1e3;
+  const double duration_s =
+      static_cast<double>(frame_count) / ntsc::kFrameRateHz;
+  return CuttingTrajectory(cutter).RadiusAt(duration_s) * kMmPerMetre;
 }
 
 void ValidateAgainstInput(const ProjectConfig& config,
