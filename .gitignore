@@ -1,13 +1,15 @@
 # C/C++ and CMake build directories
-build/
-build-*/
-cmake-build-*/
-out/
-bin/
-lib/
-lib64/
-obj/
-objs/
+# Anchored to the repository root so that a source directory with one of
+# these names (src/lib/, for example) is not silently ignored.
+/build/
+/build-*/
+/cmake-build-*/
+/out/
+/bin/
+/lib/
+/lib64/
+/obj/
+/objs/
 
 # CMake and build system generated files
 CMakeCache.txt
@@ -57,7 +59,6 @@ build.ninja
 *.dmp
 
 # Test artifacts and reports
-*.xml
 *.tap
 *.trs
 *.log
@@ -76,19 +77,19 @@ __pycache__/
 
 # Python packaging/build artifacts
 .Python
-python-build/
-dist/
-site/
+/python-build/
+/dist/
+/site/
 *.egg
 *.egg-info/
 .eggs/
 pip-wheel-metadata/
 
 # Python virtual environments and tooling
-.venv/
-venv/
-env/
-ENV/
+/.venv/
+/venv/
+/env/
+/ENV/
 .tox/
 .nox/
 .pytest_cache/
@@ -106,7 +107,7 @@ ENV/
 *.env
 
 # AI artifacts
-memory/
+/memory/
 
 # Common editor/OS artifacts
 .vscode/
@@ -118,8 +119,8 @@ memory/
 Thumbs.db
 
 # Nix and local results
-result
-result-*
+/result
+/result-*
 
 # Generated media: CVBS inputs, audio, EFM and RF. Never committed; tests and
 # scripts write it beneath the build directory.
