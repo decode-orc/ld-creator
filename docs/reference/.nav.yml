@@ -1,4 +1,6 @@
 nav:
   - cli-options.md
+  - project-file.md
   - input-files.md
   - rf-output.md
+  - diagnostic-taps.md

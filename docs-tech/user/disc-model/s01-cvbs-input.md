@@ -46,8 +46,15 @@ IRE = 100 · (v − blanking) / (white − blanking)
 
 With the preset levels (blanking 240, white 800) this is `(v − 240) / 5.6`.
 Black is not used: it is a picture level (+7.5 IRE setup), not a reference of
-the scale. A `.meta` level override, where the CVBS spec allows one, replaces
-the preset value.
+the scale. The only level override the CVBS spec's metadata defines is
+`black_level`, so no override affects the conversion.
+
+**Accepted input.** The `.meta` must declare `preset` `NTSC`, `signal_type`
+`composite`, a time-base-stable 4fsc signal state (`STANDARD_STABLE_LOCKED`
+or `STANDARD_STABLE_UNLOCKED`, so that the 910-sample line and the stored
+origin below hold), and one of the four encodings above. The `.cvbs` must
+hold whole 477 750-sample frames, matching `number_of_sequential_frames`
+when it is given.
 
 Check values: sync tip 16 → −40 IRE; black 282 → +7.5 IRE; white 800 → 100
 IRE; peak 1019 → 139.1 IRE.
@@ -91,7 +98,7 @@ with `t = 0` at 0H of frame line 1 of the first frame read.
 
 ## Project YAML block
 
-`input` (see [project-file-schema.md](project-file-schema.md#input)):
+`input` (see [docs/reference/project-file.md](../../../docs/reference/project-file.md#input)):
 `video_path` (required), `first_frame` (default 0) and `frame_count`
 (default: every frame from `first_frame`).
 

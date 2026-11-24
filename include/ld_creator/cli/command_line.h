@@ -24,6 +24,17 @@ enum class LogLevel { kInfo, kDebug, kTrace };
 struct CommandLineOptions {
   bool show_help = false;
   bool show_version = false;
+  // --project: the project file. Required unless --help or --version is
+  // given.
+  std::string project_path;
+  // --validate: check the project and its input, write nothing.
+  bool validate_only = false;
+  // --output-root: the directory {output} stands for. Unset means the
+  // project file's directory.
+  std::optional<std::string> output_root;
+  // --threads: worker threads; 0 means one per hardware thread ("auto").
+  // Never changes the output.
+  int threads = 0;
   LogLevel log_level = LogLevel::kInfo;
   // Empty when logging goes to the console only.
   std::string log_file;

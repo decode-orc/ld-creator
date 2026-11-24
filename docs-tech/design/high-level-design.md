@@ -62,13 +62,21 @@ Non-goals:
 
 ## 2. External interfaces
 
-### 2.1 Project file — *designed*
+### 2.1 Project file — *implemented (loading and validation)*
 
 A run is described by a **YAML project file**, as in videosynth. It holds
 every input, every stage parameter, every seed and the output, so the
 project file and the media it names determine the RF byte for byte. The
-schema is in
+key-by-key reference is `docs/reference/project-file.md`; the design notes
+behind it are in
 [../user/disc-model/project-file-schema.md](../user/disc-model/project-file-schema.md).
+
+Implemented in `src/project/`: the yaml-cpp parser (`project_parser.cpp`),
+range, tolerance and allow-list checks (`project_validator.cpp`), path roots
+and loading through an injected `ITextFileReader` (`project_loader.cpp`), and
+the resolved-project writer (`resolved_project.cpp`, with `sha256.cpp`).
+`src/pipeline/run_setup.cpp` checks a loaded project against its input
+media (frame ranges, the §4.12 end radius, resolved-project hashes).
 
 - Each pipeline stage has its own block. An omitted block or key takes the
   stage's documented ideal value.
@@ -79,7 +87,7 @@ schema is in
   outside an IEC tolerance are errors unless their key path is listed in
   `allow_out_of_tolerance`.
 
-### 2.2 Inputs — *designed*
+### 2.2 Inputs — *implemented for NTSC composite video*
 
 All inputs follow the CVBS file format specification
 (`docs-tech/cvbs-file-format-specification/docs/index.md`).
@@ -92,7 +100,10 @@ All inputs follow the CVBS file format specification
 
 - The video standard (PAL / NTSC) is taken from the `.meta` video standard
   preset; ld-creator does not accept a conflicting override. NTSC is the first
-  standard implemented.
+  standard implemented: `src/cvbs_input/` reads the `.meta`
+  (`cvbs_metadata.cpp`) and the samples (`cvbs_video_input.cpp`, S1), and
+  accepts only NTSC composite at 4fsc with a time-base-stable signal state.
+  Audio and EFM inputs are designed.
 - Video sample encodings: `CVBS_U10_4FSC`, `CVBS_U16_4FSC`, `CVBS_S16_4FSC` and
   `CVBS_TPG21_4FSC`. Values below sync tip (the LaserVision VBI burst) are
   carried through.
@@ -102,7 +113,7 @@ All inputs follow the CVBS file format specification
   already produces the channel-bit-level t-values.
 - Audio channel pair 1 maps to analogue channels I (left) and II (right).
 
-### 2.3 Outputs — *designed*
+### 2.3 Outputs — *designed (formats implemented, not yet written by a run)*
 
 | Output | Description |
 |--------|-------------|
@@ -112,14 +123,22 @@ All inputs follow the CVBS file format specification
 
 `.lds` and `.ldf` output may be added later; ld-decode reads `.s16` directly.
 
-### 2.4 Command line — *implemented (skeleton only)*
+The `.s16` word mapping (`src/rf_sample_writer/`, S14), the resolved-project
+text (`src/project/resolved_project.cpp`) and the tap formats
+(`src/diagnostics/tap_writer.cpp`, documented in
+`docs/reference/diagnostic-taps.md`) are implemented and unit tested. A run
+writes none of them until the pipeline is wired (plan Task 5.4).
 
-`src/main.cpp`, `src/cli/command_line.cpp`. Implemented options: `--help`,
-`--version`, `--log-level`, `--log-file`. User reference:
-`docs/reference/cli-options.md`.
+### 2.4 Command line — *implemented*
 
-Designed: `--project`, `--validate`, `--output-root` and `--threads`, matching
-videosynth. No command-line option may change the output.
+`src/main.cpp`, `src/cli/command_line.cpp`. Options: `--project`,
+`--validate`, `--output-root`, `--threads`, `--log-level`, `--log-file`,
+`--help`, `--version`, matching videosynth. No command-line option may change
+the output. User reference: `docs/reference/cli-options.md`.
+
+A run loads and checks the project and its input; with `--validate` it then
+exits successfully. Without it, it reports that RF modulation is not
+implemented and exits with a failure status.
 
 ---
 
@@ -135,7 +154,7 @@ parameter.
 
 | # | Stage (module) | Physical process | Status |
 |---|----------------|------------------|--------|
-| S1 | `cvbs_input` | Programme source: CVBS to IRE at 4fsc | designed |
+| S1 | `cvbs_input` | Programme source: CVBS to IRE at 4fsc | implemented |
 | S2 | `video_rate_converter` | Resampling to the modelling rate | designed |
 | S3 | `group_delay_predistorter` | §9.1.7 group-delay pre-distortion | designed |
 | S4 | `video_pre_emphasis` | §9.2.4 pre-emphasis | designed |
@@ -145,10 +164,18 @@ parameter.
 | S8 | `disc_cutter` | Laser beam recorder: time → track position (§4.7, §4.15) | designed |
 | S9 | `disc_replicator` | Master → stamper → pressed disc | designed |
 | S10 | `playback_mechanics` | Spindle and tracking: playback time → track position | designed |
-| S11 | `optical_readout` | §11.1 reference optics: pits → photocurrent | designed |
+| S11 | `optical_readout` | §11.1 reference optics: pits → photocurrent | designed (transfer function H implemented, used for the `hfmi` default) |
 | S12 | `player_front_end` | Photodiode, preamplifier (§11.2); diagnostic MTF equaliser | designed |
 | S13 | `rf_capture` | Capture device (DomesdayDuplicator by default) | designed |
-| S14 | `rf_sample_writer` | `.s16` and resolved project | designed |
+| S14 | `rf_sample_writer` | `.s16` and resolved project | implemented (writer; not yet wired) |
+
+Each stage has an `I`-prefixed streaming interface
+(`include/ld_creator/pipeline/stage_interfaces.h`) over the typed D1–D10
+blocks (`sampled_signal.h`, `pit_edges.h`). A stage's output depends only
+on the concatenation of its input, never on the block split.
+`block_chain.h` connects stages, optionally across `ThreadedHandoff`
+thread boundaries that preserve order, so the output is identical for any
+block size and thread count (unit tested with fake stages).
 
 Pit edges are carried as exact event lists from S7 to S10, and the readout
 (S11) turns them back into a waveform at an 80 MHz readout rate, above twice
@@ -219,8 +246,9 @@ Implemented modules are marked ✔; the rest are planned.
 | Module | Directory | Responsibility |
 |--------|-----------|----------------|
 | ✔ cli | `src/cli/`, `include/ld_creator/cli/` | Command-line parsing and usage text |
-| project | `src/project/` | Project YAML loading, validation, ideal defaults, resolved-project writing |
-| cvbs_input | `src/cvbs_input/` | S1: read `.cvbs` and `.meta`, convert to IRE |
+| ✔ project | `src/project/` | Project YAML loading, validation, ideal defaults, resolved-project writing |
+| ✔ standards | `include/ld_creator/standards/` | Exact NTSC timing constants (header only) |
+| ✔ cvbs_input | `src/cvbs_input/` | S1: read `.cvbs` and `.meta`, convert to IRE |
 | audio_input | `src/audio_input/` | Read WAV channel pairs |
 | efm_input | `src/efm_input/` | Read `.efm` t-values and `.efm.meta` frame index |
 | dsp | `src/dsp/` | Shared filters and resamplers |
@@ -233,12 +261,12 @@ Implemented modules are marked ✔; the rest are planned.
 | disc_cutter | `src/disc_cutter/` | S8 |
 | disc_replicator | `src/disc_replicator/` | S9 |
 | playback_mechanics | `src/playback_mechanics/` | S10 |
-| optical_readout | `src/optical_readout/` | S11 |
+| optical_readout | `src/optical_readout/` | S11 (✔ readout transfer function) |
 | player_front_end | `src/player_front_end/` | S12 |
 | rf_capture | `src/rf_capture/` | S13 |
-| rf_sample_writer | `src/rf_sample_writer/` | S14 |
-| diagnostics | `src/diagnostics/` | Diagnostic tap sinks |
-| pipeline | `src/pipeline/` | Block-based orchestration, threading, determinism |
+| ✔ rf_sample_writer | `src/rf_sample_writer/` | S14 |
+| ✔ diagnostics | `src/diagnostics/` | Byte sinks and diagnostic tap writers |
+| ✔ pipeline | `src/pipeline/`, `include/ld_creator/pipeline/` | D1–D10 types, stage interfaces, block chain and threading (✔); run setup against the input (✔); end-to-end wiring (planned) |
 
 All modules are built into the `ld_creator_core` library; `src/main.cpp` is
 the only source outside it. Modules depend on interfaces (`I`-prefixed) and

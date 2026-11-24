@@ -150,9 +150,9 @@ amendment to it.
 | S11.detection | Detector | whole returned beam on one photodiode | — | — | §11.2 | sourced | fixed |
 | S11.model | Readout model | linear | — | — | Plan Task 5.2; phase-pit in Task 10.1 | declared | fixed |
 | S11.hfmi_reference_frequency | HFMI spatial frequency | 802 | ±26 | pits/mm | Figure 18 (Amd 2) | sourced | fixed |
-| S11.hfmi_limits | HFMI limits | 0.16–0.40 at 1.4 µm to 0.18–0.42 at 2.0 µm (read from the figure, ±0.01) | — | — | Figure 18 (Amd 2) | sourced | — |
-| S11.mtf_at_reference | H at 802 pits/mm | 0.2134 | ±0.002 (numerical) | — | [S11](s11-optical-readout.md) | derived | fixed |
-| S11.hfmi | HFMI of the modelled disc | 0.272 (m = 1) | inside Figure 18 | — | [S11](s11-optical-readout.md) | derived | `optical_readout.hfmi` |
+| S11.hfmi_limits | HFMI limits | 0.16–0.40 at 1.4 µm to 0.18–0.42 at 2.0 µm (read from the figure, ±0.01), linear in pitch between; no band outside 1.4–2.0 µm | — | — | Figure 18 (Amd 2) | sourced | — |
+| S11.mtf_at_reference | H at 802 pits/mm | 0.21317 | < 10⁻¹² (quadrature, checked against the uniform-pupil closed form) | — | [S11](s11-optical-readout.md) | derived | fixed |
+| S11.hfmi | HFMI of the modelled disc | 0.27142 (m = 1) | inside Figure 18 | — | [S11](s11-optical-readout.md) | derived | `optical_readout.hfmi` |
 | S11.readout_rate | Readout rate Fr | 80 | exact | MHz | [S11](s11-optical-readout.md): band limit 35.7 MHz < 40 MHz | derived | fixed |
 | S11.adjacent_tracks | Adjacent-track content | blank | — | — | [S11](s11-optical-readout.md) | declared | fixed |
 

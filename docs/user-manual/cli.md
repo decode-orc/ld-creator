@@ -1,28 +1,43 @@
 # Command Line
 
-ld-creator is a command-line program:
+ld-creator is a command-line program. A run is described by a [project file](../reference/project-file.md); the command line only says where it is and how to run:
 
 ```bash
-ld-creator [options]
-```
-
-## Available today
-
-```bash
-ld-creator --help                 # usage
-ld-creator --version              # build version (git commit hash)
-ld-creator --log-level debug      # more detailed logging
-ld-creator --log-file run.log     # also write the log to a file
+ld-creator --project disc.yaml                       # run the project
+ld-creator --project disc.yaml --validate            # check it, write nothing
+ld-creator --project disc.yaml --output-root build   # {output} = build/
+ld-creator --project disc.yaml --threads 1           # single-threaded; same output
+ld-creator --help
+ld-creator --version
 ```
 
 The full list, with defaults and accepted values, is in [Command-line options](../reference/cli-options.md).
 
+## Checking a project
+
+`--validate` loads the project and its input and runs every check:
+
+- the project's structure, key names and types;
+- each value's range and, where IEC 60857 sets one, its tolerance (unless listed in `allow_out_of_tolerance`);
+- the input recording: NTSC, composite, 4fsc, whole frames;
+- the frame ranges of the input and of each diagnostic tap;
+- the radius at the end of the run against IEC 60857 §4.12 (145 mm);
+- for a resolved project, the input files' hashes.
+
+Every problem is reported, each naming its key path, for example:
+
+```text
+Project validation error: video_pre_emphasis.t1_ns = 340 is outside the IEC 60857 §9.2.4 tolerance 312–328 (list video_pre_emphasis.t1_ns in allow_out_of_tolerance to allow it)
+```
+
+On success ld-creator logs the input, the disc's radius range and the output path, and exits with status 0.
+
 !!! warning "Planned"
-    Options to select the input CVBS file, the output RF file and its format and sample rate will be added with the modulation pipeline.
+    RF modulation is not implemented yet. A run without `--validate` performs the same checks and then exits with a non-zero status.
 
 ## Exit status
 
 | Status | Meaning |
 |--------|---------|
-| `0` | `--help` or `--version` completed |
-| non-zero | Invalid arguments, a log file could not be opened, or (currently) a modulation run was requested |
+| `0` | `--help` or `--version` completed, or `--validate` found no errors |
+| non-zero | Invalid arguments, a log file could not be opened, a project or input error, or (currently) a modulation run was requested |

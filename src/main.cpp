@@ -11,14 +11,20 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <exception>
+#include <filesystem>
 #include <iostream>
 #include <memory>
+#include <string>
 #include <string_view>
+#include <thread>
 #include <vector>
 
 #include "ld_creator/cli/command_line.h"
+#include "ld_creator/pipeline/run_setup.h"
+#include "ld_creator/project/project_validator.h"
 #include "ld_creator_version.h"
 
 namespace {
@@ -46,6 +52,68 @@ void ConfigureLogging(const ld_creator::CommandLineOptions& options) {
                                                  sinks.end());
   logger->set_level(ToSpdlogLevel(options.log_level));
   spdlog::set_default_logger(logger);
+}
+
+// Loads and checks the project and its input; with --validate, stops there.
+int RunProject(const ld_creator::CommandLineOptions& options) {
+  namespace fs = std::filesystem;
+  std::error_code error;
+  const fs::path project_file = fs::absolute(options.project_path, error);
+  if (error) {
+    spdlog::error("cannot resolve project path {}", options.project_path);
+    return EXIT_FAILURE;
+  }
+  const ld_creator::PathRoots roots{
+      .project_dir = project_file.parent_path().lexically_normal().string(),
+      .output_root = options.output_root};
+  spdlog::debug("Project file: {}", project_file.string());
+  spdlog::debug("{{project}} = {}", roots.project_dir);
+  spdlog::debug("{{output}} = {}",
+                options.output_root ? *options.output_root : roots.project_dir);
+  const unsigned int threads =
+      options.threads > 0 ? static_cast<unsigned int>(options.threads)
+                          : std::max(1U, std::thread::hardware_concurrency());
+  spdlog::debug("Worker threads: {}", threads);
+
+  ld_creator::FileTextReader project_reader;
+  ld_creator::SqliteCvbsMetadataReader metadata_reader;
+  ld_creator::FileByteSourceFactory byte_sources;
+  const ld_creator::RunSetupResult setup =
+      ld_creator::PrepareRun(options.project_path, roots, LD_CREATOR_VERSION,
+                             {.project_reader = &project_reader,
+                              .metadata_reader = &metadata_reader,
+                              .byte_sources = &byte_sources});
+  for (const std::string& warning : setup.diagnostics.warnings) {
+    spdlog::warn("{}", warning);
+  }
+  for (const std::string& message : setup.diagnostics.errors) {
+    spdlog::error("{}", message);
+  }
+  if (!setup.run) {
+    return EXIT_FAILURE;
+  }
+
+  const ld_creator::PreparedRun& run = *setup.run;
+  const ld_creator::DiscCutterConfig& cutter = run.config.disc_cutter;
+  spdlog::info("Input: {} ({} of {} frames from frame {})",
+               run.config.input.video_path, run.frame_count,
+               run.file_frame_count, run.config.input.first_frame);
+  spdlog::info("Disc: {}, {:.4f} mm to {:.4f} mm at {} um pitch",
+               ld_creator::ToString(cutter.format), cutter.start_radius_mm,
+               ld_creator::EndRadiusMm(cutter, run.frame_count),
+               cutter.track_pitch_um);
+  spdlog::debug("Resolved hfmi: {}",
+                run.config.optical_readout.hfmi.value_or(0.0));
+  spdlog::info("Output: {}", run.config.output.rf_path);
+
+  if (options.validate_only) {
+    spdlog::info("Project is valid");
+    return EXIT_SUCCESS;
+  }
+  // The modulation stages are designed but not yet implemented; see
+  // docs-tech/design/high-level-design.md.
+  spdlog::error("RF modulation is not implemented yet");
+  return EXIT_FAILURE;
 }
 
 }  // namespace
@@ -81,8 +149,5 @@ int main(int argc, char* argv[]) {
   }
 
   spdlog::info("ld-creator {}", LD_CREATOR_VERSION);
-  // The modulation pipeline is designed but not yet implemented; see
-  // docs-tech/design/high-level-design.md.
-  spdlog::error("RF modulation is not implemented yet");
-  return EXIT_FAILURE;
+  return RunProject(options);
 }

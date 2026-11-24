@@ -35,6 +35,16 @@ TEST(CliExecutableTest, ExitsSuccessfullyWhenAskedForHelp) {
   EXPECT_EQ(RunExecutable("--help"), EXIT_SUCCESS);
 }
 
+TEST(CliExecutableTest, ExitsWithFailureWhenProjectIsMissing) {
+  EXPECT_EQ(RunExecutable(""), EXIT_FAILURE);
+  EXPECT_EQ(RunExecutable("--validate"), EXIT_FAILURE);
+}
+
+TEST(CliExecutableTest, ExitsWithFailureWhenProjectFileDoesNotExist) {
+  EXPECT_EQ(RunExecutable("--project /nonexistent/project.yaml --validate"),
+            EXIT_FAILURE);
+}
+
 TEST(CliExecutableTest, ExitsWithFailureWhenGivenUnknownOption) {
   EXPECT_EQ(RunExecutable("--frobnicate"), EXIT_FAILURE);
 }

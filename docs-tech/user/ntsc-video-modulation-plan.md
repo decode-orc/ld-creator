@@ -457,7 +457,7 @@ two-dimensional linear transfer for a 0.8 µm pit.
 - A constant-frequency pit train gives the modulation depth the model
   predicts.
 - Predicted HFMI falls inside the §12.3 / Figure 18 limits. (S11's note
-  already shows the linear model is limited to HFMI ≤ 0.272, the lower part
+  already shows the linear model is limited to HFMI ≤ 0.2714, the lower part
   of the band; the default uses that limit.)
 
 ### Task 5.3 — Front end and capture (S12, S13)

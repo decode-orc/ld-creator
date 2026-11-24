@@ -121,6 +121,7 @@
           buildInputs = with pkgs; [
             spdlog
             sqlite
+            yaml-cpp
             gtest
           ];
 
@@ -190,6 +191,7 @@
             # Libraries
             spdlog
             sqlite
+            yaml-cpp
             gtest
 
             # Scripts and documentation

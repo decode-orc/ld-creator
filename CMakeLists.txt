@@ -90,6 +90,18 @@ find_package(spdlog REQUIRED)
 # CVBS metadata sidecars (.meta) are SQLite databases (CVBS file format
 # specification, docs-tech/cvbs-file-format-specification).
 find_package(SQLite3 REQUIRED)
+# Project files are YAML, as in videosynth.
+find_package(yaml-cpp REQUIRED)
+
+# yaml-cpp 0.8 exports the namespaced target; older packages define only the
+# bare name, which reaches the linker as "-lyaml-cpp" and resolves only if the
+# library sits in a directory already being searched. Link the imported target
+# where it exists.
+if(TARGET yaml-cpp::yaml-cpp)
+    set(LD_CREATOR_YAML_CPP_TARGET yaml-cpp::yaml-cpp)
+else()
+    set(LD_CREATOR_YAML_CPP_TARGET yaml-cpp)
+endif()
 
 if(LD_CREATOR_BUILD_TESTS)
     find_package(GTest REQUIRED)
@@ -100,6 +112,19 @@ endif()
 # (see docs-tech/design/high-level-design.md, "Module layout").
 add_library(ld_creator_core
     src/cli/command_line.cpp
+    src/cvbs_input/cvbs_metadata.cpp
+    src/cvbs_input/cvbs_video_input.cpp
+    src/diagnostics/byte_sink.cpp
+    src/diagnostics/tap_writer.cpp
+    src/optical_readout/readout_transfer.cpp
+    src/pipeline/run_setup.cpp
+    src/project/number_format.cpp
+    src/project/project_loader.cpp
+    src/project/project_parser.cpp
+    src/project/project_validator.cpp
+    src/project/resolved_project.cpp
+    src/project/sha256.cpp
+    src/rf_sample_writer/rf_sample_writer.cpp
 )
 
 target_include_directories(ld_creator_core
@@ -113,6 +138,8 @@ target_link_libraries(ld_creator_core
     PUBLIC
         spdlog::spdlog
         SQLite::SQLite3
+    PRIVATE
+        ${LD_CREATOR_YAML_CPP_TARGET}
 )
 
 add_executable(ld-creator

@@ -33,7 +33,9 @@ disc_cutter:
 optical_readout:
   numerical_aperture: 0.40
   rim_intensity: 0.23
-  hfmi: 0.272
+  # The default: the largest HFMI with pit contrast m = 1 at these optics,
+  # (4/pi) * H(802 pits/mm), as the resolved project writes it.
+  hfmi: 0.27141590456593495
 
 player_front_end:
   profile: iec_reference

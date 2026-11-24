@@ -118,8 +118,13 @@ fundamental of the 50 % square wave survives. The fundamental's peak-to-peak
 amplitude is `(4/π)·H(V)`, so
 
 ```
-HFMI = m · (4/π) · H(802 pits/mm),   H(802 pits/mm) = 0.2134   (ν/fc = 0.634)
+HFMI = m · (4/π) · H(802 pits/mm),   H(802 pits/mm) = 0.21317   (ν/fc = 0.634)
 ```
+
+The implementation (`src/optical_readout/readout_transfer.cpp`) evaluates
+`H` by integrating across the track analytically (an erf) and along it with
+64-point Gauss–Legendre quadrature after the substitution `x = cos θ`. It
+reproduces the uniform-pupil closed form to 10⁻¹², and gives 0.21317 here.
 
 **Physical limit of the linear model.** Because the LSF is non-negative,
 `i` lies in [1 − m, 1]. On long pits, which the outer CAV radii resolve
@@ -127,7 +132,7 @@ fully, `i` reaches 1 − m. Intensity cannot be negative, so `m ≤ 1`, which
 limits the linear model to
 
 ```
-HFMI ≤ (4/π) · 0.2134 = 0.272
+HFMI ≤ (4/π) · 0.21317 = 0.27142
 ```
 
 Figure 18's band at the example pitch of 1.667 µm is about 0.17–0.41, with
@@ -136,7 +141,7 @@ of the band, and not the midpoint. This is a known limitation: a phase pit does 
 like a dark mark. Its signal comes from interference between pit and land
 light (PTR p. 186), which the phase-pit model of plan Task 10.1 represents.
 
-**Decision for the ideal baseline.** `m = 1`, giving HFMI = 0.272. This is
+**Decision for the ideal baseline.** `m = 1`, giving HFMI = 0.27142. This is
 the largest modulation the linear model represents without unphysical
 intensity, and it lies inside the Figure 18 band at every pitch from 1.4 to
 2.0 µm. The project may set a lower `hfmi`; a value that implies `m > 1` is a
@@ -163,7 +168,7 @@ sample by exact decimation after its anti-alias filter.
 | `S11.wavelength` | 632.8 nm (fixed) |
 | `S11.numerical_aperture` | 0.40 ± 0.01 |
 | `S11.rim_intensity` | 0.23 ± 0.01 |
-| `S11.hfmi` | 0.272 (derived: m = 1) |
+| `S11.hfmi` | 0.27142 (derived: m = 1) |
 | `S11.hfmi_reference_frequency` | 802 ± 26 pits/mm |
 | `S11.readout_rate` | 80 MHz (derived) |
 
@@ -196,7 +201,7 @@ sample by exact decimation after its anti-alias filter.
 |-----|------|---------|-------|---------------|
 | `numerical_aperture` | float | 0.40 | 0.30–0.60 | 0.39–0.41 (§11.1.2) |
 | `rim_intensity` | float | 0.23 | 0.05–1.0 | 0.22–0.24 (§11.1.3) |
-| `hfmi` | float | the largest value with m ≤ 1 (0.272 at nominal optics) | > 0, and m ≤ 1 | inside the Figure 18 band at the configured track pitch |
+| `hfmi` | float | the largest value with m ≤ 1 (0.27142 at nominal optics) | > 0, and m ≤ 1 | inside the Figure 18 band at the configured track pitch |
 
 The wavelength is fixed at 632.8 nm (§11.1.1 gives no tolerance).
 

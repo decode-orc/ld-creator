@@ -15,7 +15,7 @@ implemented.
 |----------|----------|
 | [s01-cvbs-input.md](s01-cvbs-input.md) … [s14-rf-sample-writer.md](s14-rf-sample-writer.md) | One note per stage |
 | [parameter-register.md](parameter-register.md) | Every parameter, its value, tolerance, source, status and project key |
-| [project-file-schema.md](project-file-schema.md) | The project YAML, key by key |
+| [project-file-schema.md](project-file-schema.md) | How the project YAML relates to the model; keys reserved for later phases. The key-by-key reference is [docs/reference/project-file.md](../../../docs/reference/project-file.md) |
 | [examples/](examples/) | Example projects: the ideal CAV disc, and a project with every key set |
 | [secondary-sources.md](secondary-sources.md) | Sources beyond the IEC standard, what each establishes, and what is still unsourced |
 | [source-acquisition.md](source-acquisition.md) | Sources still to acquire, in order of importance, with links |
@@ -84,7 +84,7 @@ says so; unknowns are listed under **Open items**, never left blank.
 6. **Input/output contract** — the D-representation in and out, units and
    time origin.
 7. **Project YAML block** — keys, types, ranges and defaults. The
-   authoritative definition is [project-file-schema.md](project-file-schema.md).
+   authoritative definition is [docs/reference/project-file.md](../../../docs/reference/project-file.md).
 8. **Ideal setting** — what the stage does when its block is omitted.
 9. **Verification** — how the implementation is checked against this note.
 10. **Diagnostic tap** — what the tap writes.

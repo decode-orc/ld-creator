@@ -1,7 +1,7 @@
 # Building ld-creator
 
 The Nix flake is the authoritative build environment. Its development shell
-supplies CMake, Ninja, a C++20 toolchain, spdlog, SQLite, Google Test,
+supplies CMake, Ninja, a C++20 toolchain, spdlog, SQLite, yaml-cpp, Google Test,
 clang-format/clang-tidy, Python 3 (NumPy, SciPy), MkDocs — and the pinned
 sister tools `videosynth` and `ld-decode`.
 

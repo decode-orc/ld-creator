@@ -21,7 +21,7 @@ Any difference between what went in and what came out is a measured error in the
 ## Development status
 
 !!! warning "Not yet functional"
-    ld-creator is in early development. The command-line tool builds and runs, but RF modulation is **not yet implemented**. Pages in this documentation say explicitly where a feature is planned rather than available.
+    ld-creator is in early development. The command-line tool reads and checks project files and their NTSC input, but RF modulation is **not yet implemented**. Pages in this documentation say explicitly where a feature is planned rather than available.
 
 ## Where to start
 

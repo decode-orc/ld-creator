@@ -26,7 +26,7 @@ uncompressed DdD capture.
 
 Alongside the RF, S14 writes the **resolved project**: the effective
 configuration with every key, as described in
-[project-file-schema.md](project-file-schema.md#the-resolved-project).
+[docs/reference/project-file.md](../../../docs/reference/project-file.md#the-resolved-project).
 
 ## Parameters
 
@@ -43,7 +43,7 @@ None: the mapping is exact.
 
 ## Project YAML block
 
-`output` (see [project-file-schema.md](project-file-schema.md#output)):
+`output` (see [docs/reference/project-file.md](../../../docs/reference/project-file.md#output)):
 `rf_path` and `mode`.
 
 ## Ideal setting
