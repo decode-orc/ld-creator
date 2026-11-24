@@ -161,6 +161,76 @@ whose Nyquist frequency (40 MHz) is above every case, so sampling `i`
 introduces no aliasing. Fr is twice the 40 MHz capture rate, so S13 can
 sample by exact decimation after its anti-alias filter.
 
+### Rendering
+
+Implemented in `src/optical_readout/` (`ReadoutLineSpread`,
+`MakeReadoutEdgeResponse`, `EdgeSumRenderer`, `LinearOpticalReadout`).
+
+**Line-spread function.** `LSF(u) = 2∫₀^fc H(ν)·cos(2πνu) dν`, computed with
+ν = fc·(1 − t²), which makes H's (fc − ν)^(3/2) behaviour at the cut-off
+smooth in t, and 32 panels of 16-point Gauss–Legendre quadrature. H is
+evaluated once, at the 512 nodes.
+
+**Why the kernel cannot simply be truncated.** H has a corner at ν = 0
+(`H ≈ 1 − c·|ν|`, as for every circular pupil), so the LSF falls only as
+1/u² and `1 − ESF` as 1/u: 2.2 × 10⁻³ at 10 µm and 1.1 × 10⁻³ at 20 µm.
+Cutting it off at any practical width would leave errors far above 10⁻⁶.
+
+**Far field from the pattern's mean.** Write the pit pattern as
+`p = ½ + d`. Inside the record `d = ±½` is the limited FM carrier, which
+has no baseband content (the limiter's output is Σ odd harmonics of φ, with
+no constant term), so the slowly varying far tail of the LSF sees only its
+mean ½, which it passes with gain H(0) = 1. Only `d` needs the near
+kernel:
+
+```
+i(τ) = 1 − m·[½ + ∫ k(x_s(τ) − x)·d(x) dx]
+k = LSF·w,  w = 1 for |u| ≤ 10 µm, raised cosine to 0 at 20 µm
+```
+
+(register `S11.kernel_window`). The implemented transfer function is then
+exact at DC and equals the kernel's transform K elsewhere, which matches H
+within **1.1 × 10⁻⁴** at every spatial frequency of 110 cycles/mm or more
+(unit tests; 110 cycles/mm is 3 MHz at the outer CAV speed, below the FM
+spectrum's lower edge). The error peaks near the cut-off, where the window
+smears H's corner, and falls only slowly with a wider window (6 × 10⁻⁵ at
+±25 µm, 2.5 × 10⁻⁵ at ±40 µm), and not at all with a smoother taper, so
+±20 µm is used. A pit pattern with content below 110 cycles/mm, such as
+long pits from a future slice level (S6), would see K's DC mass,
+1 − 0.00305, instead of 1; this must be revisited when audio or EFM exists.
+
+**Edges.** With E the edge response of k, tabulated at 5 nm on [−W, W]
+with Hermite interpolation (register `S11.kernel_table_spacing`):
+
+```
+i(τ) = 1 − m·[½ + M·d_left + Σ_window Δ_j·E(x_s(τ) − x_j)]
+```
+
+d steps by Δ = ±1 at each D7 edge; the steps within ±W of the spot are
+summed and older ones are folded into `d_left`, the value of d just before
+the window; M = E(W) = 0.99695 is the kernel's mass. The table's
+interpolation error is below 1e-10 per edge (unit test against direct
+integration), so below 1e-8 for the ≤ 64 edges in a window.
+
+**The record's ends** (register `S11.record_boundary`, declared). The
+record begins at arc length 0 (τ = 0) and ends at the cutting position of
+the last frame. Outside it nothing is known about the track, so the pattern
+there is taken as its mean, d = 0: the start adds a step `p₀ − ½`, with
+`p₀` the state the first edge leaves (1 if it ends a pit, as S7 gives for
+φ = 0), and the end a step `½ − p_end`. Only samples within 20 µm (2 µs at
+the inner radius) of either end see these steps.
+
+**Precision.** Arc lengths are doubles from the start of the run; at the
+end of an hour (40 km) their spacing is 7 pm, 0.6 ps of track time, which
+is within S7's 4 ps edge-time budget.
+
+**Cost.** About 64 edges per sample at the inner radius, at 80 MHz.
+
+**Host independence.** H is computed with the portable exp, log, erf,
+arccos, sine and cosine of `src/dsp/portable_math.cpp`, and the
+Gauss–Legendre rules with portable cosine, so the tables, and the RF, are
+the same on every host (HLD §2.3).
+
 ## Parameters
 
 | Register row | Value |
@@ -171,6 +241,9 @@ sample by exact decimation after its anti-alias filter.
 | `S11.hfmi` | 0.27142 (derived: m = 1) |
 | `S11.hfmi_reference_frequency` | 802 ± 26 pits/mm |
 | `S11.readout_rate` | 80 MHz (derived) |
+| `S11.kernel_window` | LSF unchanged to ±10 µm, raised cosine to 0 at ±20 µm (declared) |
+| `S11.kernel_table_spacing` | 5 nm (declared) |
+| `S11.record_boundary` | pattern = its mean outside the record (declared) |
 
 ## Assumptions and approximations
 
@@ -179,14 +252,25 @@ sample by exact decimation after its anti-alias filter.
 - **Pits as stripes across the track.** The model uses the one-dimensional
   slice `H(νₓ, 0)`, which treats each pit as infinitely wide. A pit narrower
   than the spot (PTR: 0.8 µm against 0.87 µm) has a different effective
-  transfer function. Plan Task 5.2 bounds the difference by computing the
-  two-dimensional linear transfer for a 0.8 µm pit.
+  transfer function. For the linear model the two-dimensional transfer is
+  radially symmetric, so a centred pit of width w has
+  `H_w(ν) = ∫ H(√(ν² + η²))·w·sinc(wη) dη`. For w = 0.8 µm (unit test):
+  `H_w(0) = 0.72`, so a long pit reads 72 % as deep as a stripe; with m
+  set from the HFMI at 802 pits/mm, the shape `H_w/H` differs by +8.7 % at
+  300 cycles/mm, +3.7 % at 700, −5.2 % at 900, −13 % at 1000 and −18.9 % at
+  0.833·fc. Across the carrier's sync-to-white range at 55 mm
+  (734–898 cycles/mm) the difference is within ±5 %. This is the largest
+  known error of the ideal readout; the width is itself unsourced (S9), and
+  the phase-pit model (plan Task 10.1) replaces both.
+- **Kernel window and far field.** Error 1.1e-4 in the transfer function
+  above 110 cycles/mm (Rendering).
 - **Perfect focus, no tilt, no aberration.** The disc is at the Figure 1a
   design point. Focus and tilt are Phase 8 work.
 - **Adjacent tracks blank.** No crosstalk at the ideal setting (Phase 9).
 - **No noise** (Phase 9).
-- The edge-response table is sampled finely enough that the interpolation
-  error in `i` is below 10⁻⁶ (chosen in plan Task 5.2).
+- The edge-response table's interpolation error is below 10⁻¹⁰ per edge,
+  so below 10⁻⁸ in `i` (Rendering).
+- **The record's ends** are padded with the pattern's mean (Rendering).
 
 ## Input/output contract
 
@@ -211,10 +295,16 @@ IEC §11 reference optics, m = 1, adjacent tracks blank, no noise.
 
 ## Verification
 
-Plan Task 5.2: unit tests compare the computed H with the analytic
-autocorrelation; a constant-frequency pit train gives the predicted
-modulation depth; the spot diameter and ring level above are reproduced; the
-predicted HFMI is inside Figure 18.
+`tests/unit/test_readout_transfer.cpp` and
+`tests/unit/test_optical_readout.cpp`: the computed H matches the
+uniform-pupil closed form; the kernel's transfer matches H within 1.1e-4
+from 110 cycles/mm; the LSF is non-negative; the table matches direct
+integration within 1e-10; constant-frequency pit trains at 500, 802 and
+1000 pits/mm give the predicted fundamental, `(2/π)·m·H`, within 1.1e-4 and
+the mean level 1 − m/2; at 802 pits/mm the peak-to-peak is the HFMI,
+inside Figure 18; the output does not depend on block size; and the
+finite-width bound above. The spot diameter and ring level were computed
+for this note (Pupil).
 
 ## Diagnostic tap
 

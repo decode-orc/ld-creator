@@ -3,7 +3,7 @@
 An ld-creator run is described by a YAML **project file**: the input, every stage parameter and the output. Nothing that affects the RF comes from the command line or the environment, so the project file and the media it names determine the RF.
 
 !!! warning "Partly implemented"
-    ld-creator reads and checks project files, and checks them against their input (`--validate`). It runs projects with [`output.mode: carrier_diagnostic`](#output). Disc modulation (`output.mode: disc`, the default) is not implemented yet: such a run stops after the checks. The keys of later stages are accepted and checked now so that projects written today stay valid.
+    ld-creator reads and checks project files, checks them against their input (`--validate`), and runs them. A disc run (`output.mode: disc`, the default) models the ideal NTSC video disc; audio and EFM are not implemented yet.
 
 ```yaml
 project:
@@ -145,14 +145,14 @@ The readout model gives HFMI = m·(4/π)·H(802 pits/mm), where H is the optics'
 | Key | Type | Default | Values |
 |-----|------|---------|--------|
 | `profile` | string | `iec_reference` | `iec_reference`: flat, unity gain, noiseless (IEC 60857 §11.2) |
-| `mtf_equaliser` | string | `none` | `none`: the unequalised signal at a player's RF test point, as real captures carry. `inverse`: a diagnostic that removes the readout's frequency response up to the optical cut-off; decode it with ld-decode `-m 0` |
+| `mtf_equaliser` | string | `none` | `none`: the unequalised signal at a player's RF test point, as real captures carry. `inverse`: a diagnostic that removes the readout's frequency response up to 84 % of the optical cut-off, tapering to nothing at the cut-off; decode it with ld-decode `-m 0` |
 
 ## `rf_capture`
 
 | Key | Type | Default | Range |
 |-----|------|---------|-------|
-| `profile` | string | `domesday_duplicator` | `domesday_duplicator`, `ideal` |
-| `level_fraction` | float | 0.75 | 0.05–1.0, the reference level as a fraction of the converter's full scale |
+| `profile` | string | `domesday_duplicator` | `domesday_duplicator`: the Domesday Duplicator's input stage, anti-alias filter and 10-bit converter. `ideal`: a linear-phase low-pass (flat within 0.01 dB to 15 MHz, at least 98 dB down from 20 MHz) and a 16-bit converter |
+| `level_fraction` | float | 0.75 | 0.05–1.0: the peak-to-peak of the blanking-level carrier at the start radius, as a fraction of the converter's full scale |
 
 ## `output`
 
@@ -163,7 +163,7 @@ The readout model gives HFMI = m·(4/π)·H(802 pits/mm), where H is the optics'
 
 `carrier_diagnostic` writes the FM carrier directly, with no disc stages: the stages up to `fm_phase_modulator` run, and the carrier `cos φ` is sampled at 40 MHz and quantised by the `rf_capture` profile at `level_fraction` of full scale. It is **not a disc**; the resolved project records the mode and says so in its header, so the file cannot be mistaken for one. See [Carrier diagnostic](../user-manual/carrier-diagnostic.md).
 
-`disc` is not implemented yet.
+`disc` runs every stage, from the input through the modelled disc, player and capture device; see [Disc model](../user-manual/disc-model.md).
 
 ## `diagnostics`
 

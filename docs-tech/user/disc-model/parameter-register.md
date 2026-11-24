@@ -165,6 +165,11 @@ amendment to it.
 | S11.hfmi | HFMI of the modelled disc | 0.27142 (m = 1) | inside Figure 18 | — | [S11](s11-optical-readout.md) | derived | `optical_readout.hfmi` |
 | S11.readout_rate | Readout rate Fr | 80 | exact | MHz | [S11](s11-optical-readout.md): band limit 35.7 MHz < 40 MHz | derived | fixed |
 | S11.adjacent_tracks | Adjacent-track content | blank | — | — | [S11](s11-optical-readout.md) | declared | fixed |
+| S11.kernel_window | Readout kernel window | LSF unchanged to ±10 µm, raised cosine to 0 at ±20 µm; far field from the pattern's mean | transfer within 1.1 × 10⁻⁴ of H from 110 cycles/mm | — | [S11](s11-optical-readout.md), Rendering | declared | fixed |
+| S11.kernel_table_spacing | Edge-response table spacing | 5 | interpolation < 10⁻¹⁰ per edge | nm | [S11](s11-optical-readout.md), Rendering | declared | fixed |
+| S11.line_spread_quadrature | LSF quadrature | ν = fc(1 − t²), 32 panels × 16-point Gauss–Legendre | — | — | [S11](s11-optical-readout.md), Rendering | declared | fixed |
+| S11.record_boundary | Pattern outside the record | its mean (d = 0) | affects 20 µm at each end | — | [S11](s11-optical-readout.md), Rendering | declared | fixed |
+| S11.finite_pit_width_error | Error of the stripe approximation (0.8 µm pit) | shape +8.7 % to −18.9 % over 300 cycles/mm–0.833·fc; ±5 % over the carrier band at 55 mm; long-pit depth 0.72 | — | — | [S11](s11-optical-readout.md), Assumptions | derived | — |
 
 ## S12 — Player front end
 
@@ -172,6 +177,7 @@ amendment to it.
 |----|------|-------|-----------|------|--------|--------|-------------|
 | S12.profile | Preamplifier response | `iec_reference` (flat, unity, noiseless) | — | — | §11.2 | sourced | `player_front_end.profile` |
 | S12.mtf_equaliser | MTF equaliser | `none` (test-point RF); diagnostic `inverse`: G = 1/H(f/v) below fc·v, 0 above | — | — | [S12](s12-player-front-end.md); ld-decode `-m/--MTF` (decoder compensates); Isailović 1985 §3.4 | declared | `player_front_end.mtf_equaliser` |
+| S12.equaliser_kernel | `inverse` kernel | Kaiser-windowed sinc, A = 122 dB (β = 0.1102(A − 8.7)), W = 20 µm, fe = fc − Δν/2, Δν = (A − 7.95)/(14.36 · 2W) | 1 ± 10⁻⁶ to 0.843·fc; < 10⁻⁶ from fc | — | Kaiser 1974; [S12](s12-player-front-end.md) | declared | fixed |
 
 ## S13 — RF capture
 
@@ -187,10 +193,16 @@ DdD = DomesdayDuplicator repository, commit `0f015fa0c5d7`.
 | S13.input_termination | Input load | 56 Ω ∥ 500 Ω = 50.36 | — | Ω | DdD schematic note | sourced | fixed |
 | S13.ac_coupling | AC-coupling corner | 1/(2π · 500 Ω · 100 nF) = 3.18 | — | kHz | DdD schematic (C401, R402, R403) | derived | fixed |
 | S13.filter_components | Anti-alias filter | L401 680 nH, L402 560 nH, C403 330 pF, C404 33 pF, C405 470 pF, C406 100 pF, C407 270 pF, R410 = R411 = 47 Ω | capacitors 5 % | — | DdD schematic | sourced | fixed |
+| S13.filter_topology | Filter connections | R410 → A; C403 A–gnd; L401 ∥ C404 A–B; C405 B–gnd; L402 ∥ C406 B–C; C407 C–gnd; R411 C → ADC (unloaded) | — | — | DdD board netlist (`Domesday Duplicator.kicad_pcb`); single termination confirmed by sheet 1 at 1 MHz | sourced | fixed |
+| S13.amplifier_feedback | Amplifier feedback | R405 200 Ω, C402 100 nF, A = R406 1.5 kΩ (switch "1000"): shelf zero 936 Hz, pole 7.96 kHz, normalised to unity at high frequency | — | — | DdD schematic; sheet 1 conditions | sourced | fixed |
+| S13.filter_realisation | Realisation at Fr | first-order sections by the bilinear transform; LC filter as an FIR from 2^15 response samples with a smooth step 36–40 MHz | sections within 1.2 × 10⁻⁴; FIR within 10⁻⁸ to 35.7 MHz | — | [S13](s13-rf-capture.md) | declared | fixed |
+| S13.filter_truncation | FIR truncation | Σ\|h\| outside the kept taps ≤ 10⁻⁹ of the total (902 taps) | — | — | [S13](s13-rf-capture.md) | declared | fixed |
+| S13.capture_mean | D9 mean and padding | 1 − m/2, subtracted before the filters; also D9 before τ = 0 and after the run | — | — | [S13](s13-rf-capture.md) | declared | fixed |
+| S13.level_reference | Level computation | odd harmonics of the blanking pit train below 40 MHz through the implemented readout and chain; extremes on 4096 points per period | < 10⁻⁶ relative | — | [S13](s13-rf-capture.md) | derived | fixed |
 | S13.filter_measured | Measured front-end response | sheet 1 table | — | dB | DdD gain and filter spreadsheet | sourced | — |
 | S13.quantiser | Quantiser | round(512 + 512u), clamped to 0–1023 | ±0.5 LSB | code | [S13](s13-rf-capture.md) | declared | fixed |
 | S13.ideal_quantiser | `ideal` profile quantiser | round(32768u), clamped to −32768…32767 | ±0.5 LSB | code | [S13](s13-rf-capture.md) | declared | fixed |
-| S13.ideal_filter | `ideal` profile anti-alias filter | passband 0–15 MHz, ripple < 0.01 dB; ≥ 98 dB down from 20 MHz | — | — | [S13](s13-rf-capture.md) | declared | fixed |
+| S13.ideal_filter | `ideal` profile anti-alias filter | passband 0–15 MHz, ripple < 0.01 dB; ≥ 98 dB down from 20 MHz; realised as a 105-tap zero-phase Kaiser sinc, cut-off 17.5 MHz, designed for A = 100 dB | — | — | [S13](s13-rf-capture.md); Kaiser 1974 | declared | fixed |
 | S13.sample_origin | First sample instant | τ = 0 | — | s | [S13](s13-rf-capture.md) | declared | fixed |
 
 ## S14 — RF sample writer
@@ -208,6 +220,7 @@ DdD = DomesdayDuplicator repository, commit `0f015fa0c5d7`.
 | S9.copy, S9.pit_geometry | Mechanisms sourced (Isailović 1985 §2.3, §6.2: edge blur by metallization, bump shape); values need Bouwhuis et al. (1985), Legierse & Pasman (1989), or measurement of a pressed disc |
 | S11.model (linear) | Plan Task 10.1, with Hopkins (JOSA 1979) or Bouwhuis et al. (1985), "Read-out of optical discs" |
 | S13 quantiser transition points | ADS825 datasheet |
+| S13.filter_topology (measured gap) | 0.5–2.9 dB between the computed and measured response from 6.8 to 12.1 MHz; calibration in plan Task 10.2, or a measurement of the board's response with a network analyser |
 
 The candidate sources are described in
 [secondary-sources.md](secondary-sources.md).

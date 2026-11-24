@@ -1,5 +1,6 @@
 nav:
   - overview.md
   - cli.md
+  - disc-model.md
   - carrier-diagnostic.md
   - round-trip-testing.md

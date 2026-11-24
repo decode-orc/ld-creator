@@ -85,7 +85,9 @@ int RunExecutable(const std::string& arguments) {
 class CarrierDiagnosticOutputTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    dir_ = fs::path(test::kBinaryDir) / "functional" / "carrier_diagnostic";
+    // One directory per test, so ctest can run them in parallel.
+    dir_ = fs::path(test::kBinaryDir) / "functional" / "carrier_diagnostic" /
+           ::testing::UnitTest::GetInstance()->current_test_info()->name();
     fs::remove_all(dir_);
     fs::create_directories(dir_);
     WriteVideo(dir_ / "ramp.cvbs");
@@ -131,18 +133,6 @@ TEST_F(CarrierDiagnosticOutputTest, ResolvedProjectReproducesTheRfByteForByte) {
             EXIT_SUCCESS);
   EXPECT_EQ(ReadFile(dir_ / "carrier.s16"), first);
   EXPECT_EQ(ReadFile(dir_ / "carrier.resolved.yaml"), resolved_text);
-}
-
-TEST_F(CarrierDiagnosticOutputTest, DiscModeIsNotYetRunnable) {
-  std::ofstream(dir_ / "disc.yaml")
-      << "input:\n  video_path: \"{project}/ramp.cvbs\"\n"
-         "disc_cutter:\n  format: cav\n  start_radius_mm: 55.0\n"
-         "  track_pitch_um: 1.6667\n"
-         "output:\n  rf_path: \"{project}/disc.s16\"\n";
-  EXPECT_EQ(
-      RunExecutable("--project \"" + (dir_ / "disc.yaml").string() + "\""),
-      EXIT_FAILURE);
-  EXPECT_FALSE(fs::exists(dir_ / "disc.s16"));
 }
 
 }  // namespace

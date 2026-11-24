@@ -88,7 +88,9 @@ Exact copy.
 
 ## Verification
 
-Identity unit test.
+Identity unit test (`tests/unit/test_disc_replicator.cpp`): edges and
+watermark pass unchanged. Implemented as `ExactCopyReplicator`
+(`src/disc_replicator/`).
 
 ## Diagnostic tap
 

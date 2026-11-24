@@ -23,10 +23,10 @@ whose every sample is known; ld-creator turns it into RF;
 difference between what went in and what came out is a measured error in the
 decode chain.
 
-> **Status:** in development. ld-creator loads and checks NTSC projects and
-> runs the video signal stages (S1–S5) to the FM carrier, which it can write
-> as a carrier-diagnostic RF file. RF from a modelled disc is not yet
-> implemented.
+> **Status:** in development. ld-creator writes the RF of a modelled ideal
+> NTSC video disc (stages S1–S14), as a DomesdayDuplicator capture would
+> record it. Audio, EFM, PAL, disc impairments and the ld-decode round-trip
+> comparison are not yet implemented.
 
 ---
 

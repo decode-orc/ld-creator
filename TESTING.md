@@ -157,6 +157,9 @@ tests/
 ├── support/              Shared helpers (fixture_paths.h, …)
 ├── unit/                 → ld_creator_unit_tests,       ctest label "unit"
 └── functional/           → ld_creator_functional_tests, ctest label "functional"
+    └── projects/         Committed videosynth and ld-creator projects for
+                          functional runs (YAML only; their media is
+                          generated into the build tree at test time)
 ```
 
 **Classification is the directory, not a list.** A source file under `unit/` is
@@ -190,5 +193,8 @@ videosynth ──CVBS/WAV/EFM──► ld-creator ──RF──► ld-decode �
   (`docs-tech/analogue-video-specifications/`). If ld-creator matches the spec,
   the discrepancy is an ld-decode finding; if not, fix ld-creator.
 
-The round-trip harness is designed but not yet implemented; see
-`docs-tech/design/high-level-design.md`.
+`tests/functional/test_disc_output.cpp` runs the first half of the loop:
+videosynth, then an ld-creator disc run, checking the RF's length, its
+independence of thread count and its reproduction from the resolved project.
+The ld-decode half and the comparison are designed but not yet implemented;
+see `docs-tech/design/high-level-design.md`.

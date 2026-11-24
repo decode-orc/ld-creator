@@ -1,15 +1,16 @@
 # Quick Start
 
-!!! warning "Planned"
-    Disc modulation is not yet implemented, so there is no end-to-end walkthrough yet. This page will take you from a videosynth project to an ld-decode result once the pipeline is available.
+!!! warning "Partly implemented"
+    ld-creator writes the RF of an ideal NTSC video disc. The comparison of ld-decode's output with the original is not implemented yet, so this page stops at the RF file.
 
 ## What works today
 
-After [building](installation.md), ld-creator checks a [project file](../reference/project-file.md) and the videosynth recording it names:
+After [building](installation.md), ld-creator checks a [project file](../reference/project-file.md) and the videosynth recording it names, and turns the recording into RF:
 
 ```bash
 ./build/ld-creator --version
 ./build/ld-creator --project disc.yaml --validate
+./build/ld-creator --project disc.yaml
 ```
 
 A minimal project for an ideal NTSC CAV disc:
@@ -27,9 +28,15 @@ output:
   rf_path: "{output}/ntsc_cav.s16"
 ```
 
-`--validate` reports every problem with the project or its input and exits with status 0 if there are none. Running without `--validate` performs the same checks; a disc project then stops, because disc modulation is not implemented yet.
+`--validate` reports every problem with the project or its input and exits with status 0 if there are none. Running without `--validate` performs the same checks and then models the disc: it writes the RF to `rf_path` (signed 16-bit samples at 40 MHz, as a Domesday Duplicator capture) and a resolved project beside it. A run takes about a second per frame on a multi-core machine; see [Disc model](../user-manual/disc-model.md).
 
-To write RF today, add `mode: carrier_diagnostic` to the `output` block and run the project without `--validate`. ld-creator writes the FM-modulated video carrier to `rf_path`, with a resolved project beside it. That file is a fault-finding aid, not a disc; see [Carrier diagnostic](../user-manual/carrier-diagnostic.md).
+The RF is read by ld-decode as it is, with its defaults:
+
+```bash
+ld-decode --NTSC ntsc_cav.s16 ntsc_cav
+```
+
+For fault-finding, `mode: carrier_diagnostic` in the `output` block writes the bare FM carrier instead; see [Carrier diagnostic](../user-manual/carrier-diagnostic.md).
 
 ## What the walkthrough will cover
 

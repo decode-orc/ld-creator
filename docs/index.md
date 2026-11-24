@@ -21,7 +21,7 @@ Any difference between what went in and what came out is a measured error in the
 ## Development status
 
 !!! warning "Not yet functional"
-    ld-creator is in early development. The command-line tool reads and checks project files and their NTSC input, and runs the video signal stages as far as the FM carrier, which it can write as a [carrier diagnostic](user-manual/carrier-diagnostic.md). RF from a modelled disc is **not yet implemented**. Pages in this documentation say explicitly where a feature is planned rather than available.
+    ld-creator is in early development. It writes RF from a modelled **ideal NTSC video disc**: the video path from the CVBS input to the capture device's samples (see [Disc model](user-manual/disc-model.md)). Audio, EFM, PAL and disc impairments are not implemented yet, and the RF has not yet been verified against ld-decode. Pages in this documentation say explicitly where a feature is planned rather than available.
 
 ## Where to start
 

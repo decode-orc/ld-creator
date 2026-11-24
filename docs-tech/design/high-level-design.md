@@ -113,7 +113,7 @@ All inputs follow the CVBS file format specification
   already produces the channel-bit-level t-values.
 - Audio channel pair 1 maps to analogue channels I (left) and II (right).
 
-### 2.3 Outputs — *implemented for the carrier diagnostic; designed for a disc*
+### 2.3 Outputs — *implemented*
 
 | Output | Description |
 |--------|-------------|
@@ -130,16 +130,24 @@ text (`src/project/resolved_project.cpp`) and the tap formats
 `output.mode: carrier_diagnostic` writes all three
 (`src/pipeline/carrier_diagnostic_run.cpp`): S1–S5, then `cos φ` rendered at
 40 MHz through the S13 quantiser and S14 (plan Task 3.5). Its resolved project
-is marked as not a disc. A disc run (`output.mode: disc`) is wired in plan
-Task 5.4.
+is marked as not a disc. A disc run (`output.mode: disc`,
+`src/pipeline/disc_run.cpp`) runs S1–S14 and can write every tap. Both runs
+share the chain plumbing in `include/ld_creator/pipeline/run_chain.h` and
+give the same number of samples: every n with n / 40 MHz before the end of
+the last frame.
 
 **Host independence.** The same project and media are to give the same bytes
 on every host. Two rules serve this in the model's code: `ld_creator_core`
 is compiled with `-ffp-contract=off`, so no compiler fuses a multiply and an
-add into one rounding; and every sine and cosine that reaches the RF comes
-from `src/dsp/portable_math.cpp`, built from + − × ÷ and rounding only,
-not from the C library, whose last bit differs between implementations.
-`std::sqrt` is correctly rounded by IEEE 754 and is used directly.
+add into one rounding; and every transcendental function that reaches the
+RF (sine, cosine, exp, log, erf, arctan, arccos) comes from
+`src/dsp/portable_math.cpp`, built from + − × ÷ and rounding only, not from
+the C library, whose last bit differs between implementations. Complex
+arithmetic uses `dsp/complex_value.h` rather than `std::complex`, whose
+multiplication and division differ between standard libraries, and the
+FFT that designs the capture filter (`dsp/fft.h`) takes its twiddles from
+the same functions. `std::sqrt` is correctly rounded by IEEE 754 and is used
+directly.
 
 ### 2.4 Command line — *implemented*
 
@@ -154,7 +162,7 @@ project is reported as not yet runnable, with a failure status.
 
 ---
 
-## 3. Signal model — *S1–S8 implemented; S9–S13 designed*
+## 3. Signal model — *implemented for NTSC video on the ideal disc*
 
 ### 3.1 Pipeline
 
@@ -174,11 +182,11 @@ parameter.
 | S6 | `recording_signal_combiner` | §7.2.1 / Amd 2 §13.1.5 PWM of audio and EFM (video only: pass-through) | implemented (pass-through) |
 | S7 | `recording_limiter` | Binary cut: pit-edge times | implemented |
 | S8 | `disc_cutter` | Laser beam recorder: time → track position (§4.7, §4.15) | implemented |
-| S9 | `disc_replicator` | Master → stamper → pressed disc | designed |
-| S10 | `playback_mechanics` | Spindle and tracking: playback time → track position | designed |
-| S11 | `optical_readout` | §11.1 reference optics: pits → photocurrent | designed (transfer function H implemented, used for the `hfmi` default) |
-| S12 | `player_front_end` | Photodiode, preamplifier (§11.2); diagnostic MTF equaliser | designed |
-| S13 | `rf_capture` | Capture device (DomesdayDuplicator by default) | designed (quantisers implemented) |
+| S9 | `disc_replicator` | Master → stamper → pressed disc | implemented (exact copy) |
+| S10 | `playback_mechanics` | Spindle and tracking: playback time → track position | implemented (locked, perfect tracking) |
+| S11 | `optical_readout` | §11.1 reference optics: pits → photocurrent | implemented (linear model) |
+| S12 | `player_front_end` | Photodiode, preamplifier (§11.2); diagnostic MTF equaliser | implemented |
+| S13 | `rf_capture` | Capture device (DomesdayDuplicator by default) | implemented |
 | S14 | `rf_sample_writer` | `.s16` and resolved project | implemented |
 
 Each stage has an `I`-prefixed streaming interface
@@ -195,9 +203,10 @@ the optical cut-off at every radius. With every stage at its ideal setting,
 the pipeline describes a disc nominal in every IEC parameter, read by the
 IEC §11 reference system and captured by a noiseless DomesdayDuplicator.
 
-S6–S8 are implemented and unit tested, but no run reaches them yet: a disc
-run needs S9–S13 as well (plan Task 5.4), so a carrier-diagnostic run is
-still the only one that writes RF.
+Every stage runs at its ideal setting; the impairments of plan Phases 8–9
+implement the same interfaces. S11 passes its D7 input on with D8 in a
+`ReadoutBlock`, because S12's diagnostic equaliser recomputes the RF from the
+edges; that keeps the two streams on one thread boundary.
 
 ### 3.2 Video path
 
@@ -281,6 +290,27 @@ Their realisations, from the S6–S8 notes:
   hook, zero at the ideal setting, waits for the exposure model (plan
   Task 8.2).
 
+The stages after the cut, from the S9–S14 notes:
+
+- S9: an exact copy. S10: the spot follows the cutting trajectory
+  (`ISpotTrajectory`, `LockedSpotTrajectory`); the arc-length watermark
+  becomes a playback-time watermark through the trajectory's inverse.
+- S11: `EdgeSumRenderer` sums, at each 80 MHz sample, the edge response of
+  every pit edge within ±20 µm of the spot, from a table at 5 nm
+  (`dsp/edge_response_table.h`). The kernel is the line-spread function,
+  tapered beyond ±10 µm; the far field of the kernel is replaced by the
+  pattern's mean, which the FM pit pattern makes exact to within 1.1e-4 of
+  the transfer function (S11 note). Outside the recorded area the pattern
+  is its mean.
+- S12: `none` passes D8; `inverse` renders the same edges with a
+  Kaiser-windowed band-limited step, flat to 1e-6 up to 0.843·fc.
+- S13: the DomesdayDuplicator's AC coupling and amplifier shelf as
+  bilinear first-order sections, and its LC anti-alias filter (topology
+  from the board's netlist) as a 902-tap FIR designed by inverse FFT of the
+  circuit's response; or the `ideal` profile's Kaiser low-pass. The level
+  is set analytically from the blanking carrier at the start radius. The
+  converter takes every second 80 MHz sample.
+
 ---
 
 ## 4. Module layout
@@ -295,7 +325,7 @@ Implemented modules are marked ✔; the rest are planned.
 | ✔ cvbs_input | `src/cvbs_input/` | S1: read `.cvbs` and `.meta`, convert to IRE |
 | audio_input | `src/audio_input/` | Read WAV channel pairs |
 | efm_input | `src/efm_input/` | Read `.efm` t-values and `.efm.meta` frame index |
-| ✔ dsp | `src/dsp/` | Host-independent sine and cosine, Kaiser window, Cholesky solver, monotone cubic, FIR response, Hermite phase interpolation |
+| ✔ dsp | `src/dsp/` | Host-independent transcendental functions and complex arithmetic, FFT, Gauss–Legendre rules, edge-response tables, Kaiser window, Cholesky solver, monotone cubic, FIR response, Hermite phase interpolation |
 | ✔ video_rate_converter | `src/video_rate_converter/` | S2 |
 | ✔ group_delay_predistorter | `src/group_delay_predistorter/` | S3 |
 | ✔ video_pre_emphasis | `src/video_pre_emphasis/` | S4 |
@@ -304,14 +334,14 @@ Implemented modules are marked ✔; the rest are planned.
 | ✔ recording_signal_combiner | `src/recording_signal_combiner/` | S6: video-only pass-through (audio and EFM sources later) |
 | ✔ recording_limiter | `src/recording_limiter/` | S7 |
 | ✔ disc_cutter | `src/disc_cutter/` | S8: cutting trajectory and cutter |
-| disc_replicator | `src/disc_replicator/` | S9 |
-| playback_mechanics | `src/playback_mechanics/` | S10 |
-| optical_readout | `src/optical_readout/` | S11 (✔ readout transfer function) |
-| player_front_end | `src/player_front_end/` | S12 |
-| rf_capture | `src/rf_capture/` | S13 (✔ quantisers) |
+| ✔ disc_replicator | `src/disc_replicator/` | S9: exact copy |
+| ✔ playback_mechanics | `src/playback_mechanics/` | S10: spot trajectory, locked player |
+| ✔ optical_readout | `src/optical_readout/` | S11: transfer function, line-spread kernel, edge-sum renderer |
+| ✔ player_front_end | `src/player_front_end/` | S12: reference front end, inverse MTF equaliser |
+| ✔ rf_capture | `src/rf_capture/` | S13: capture filters, level, decimation, quantisers |
 | ✔ rf_sample_writer | `src/rf_sample_writer/` | S14 |
 | ✔ diagnostics | `src/diagnostics/` | Byte sinks and diagnostic tap writers |
-| ✔ pipeline | `src/pipeline/`, `include/ld_creator/pipeline/` | D1–D10 types, stage interfaces, block chain and threading (✔); run setup against the input (✔); the carrier-diagnostic run with taps and resolved project (✔); the disc run (planned) |
+| ✔ pipeline | `src/pipeline/`, `include/ld_creator/pipeline/` | D1–D10 types, stage interfaces, block chain and threading (✔); run setup against the input (✔); the carrier-diagnostic and disc runs with taps and resolved project (✔) |
 
 All modules are built into the `ld_creator_core` library; `src/main.cpp` is
 the only source outside it. Modules depend on interfaces (`I`-prefixed) and
@@ -337,12 +367,12 @@ differ in one stage block.
 ## 6. Open questions
 
 - PAL analogue/digital audio coexistence on the low band (§3.4).
-- `src/optical_readout/readout_transfer.cpp` (S11) still uses the C
-  library's `erf`, `exp`, `sin` and `cos`. Its result, the default `hfmi`,
-  is written to the resolved project and checked against the computed
-  maximum, so a last-bit difference between hosts could make one host's
-  resolved project fail validation on another. Planned: move it to
-  host-independent functions when S11 is implemented (plan Task 5.2).
+- The computed DomesdayDuplicator filter response is 0.5–2.9 dB above the
+  measured one from 6.8 to 12.1 MHz, outside the 5 % capacitor tolerance
+  ([S13 note](../user/disc-model/s13-rf-capture.md)); calibration is plan
+  Task 10.2.
+- A disc run takes about a second per frame with eight threads; S11's edge
+  sum and S13's FIR dominate. Not yet profiled (AGENTS.md §5).
 - Whether ld-creator should accept videosynth's `RAW_S16_*` high-rate presets
   directly, avoiding a 4fsc → modelling-rate resample.
 - The linear readout model reaches only the lower part of the IEC 60857

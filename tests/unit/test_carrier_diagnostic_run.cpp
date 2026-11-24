@@ -74,8 +74,8 @@ class CarrierDiagnosticRunTest : public ::testing::Test {
     run_.frame_count = 1;
   }
 
-  CarrierDiagnosticResult RunDiagnostic(test::MemorySinkFactory* sinks,
-                                        unsigned int threads) {
+  RfRunResult RunDiagnostic(test::MemorySinkFactory* sinks,
+                            unsigned int threads) {
     return RunCarrierDiagnostic(
         run_, "build1", threads,
         {.byte_sources = &sources_, .byte_sinks = sinks});
@@ -88,7 +88,7 @@ class CarrierDiagnosticRunTest : public ::testing::Test {
 TEST_F(CarrierDiagnosticRunTest,
        WritesTheRfAndAResolvedProjectFlaggedNotADisc) {
   test::MemorySinkFactory sinks;
-  const CarrierDiagnosticResult result = RunDiagnostic(&sinks, 1);
+  const RfRunResult result = RunDiagnostic(&sinks, 1);
 
   // 40 MHz × 1001/30000 s = 1 334 666.7 → 1 334 667 samples, 2 bytes each.
   EXPECT_EQ(result.rf_samples, 1334667);

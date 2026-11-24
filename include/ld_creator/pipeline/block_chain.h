@@ -53,6 +53,7 @@ inline bool IsEmptyBlock(const RfCodeBlock& block) {
 inline bool IsEmptyBlock(const RecordedEdgeBlock& /*block*/) { return false; }
 inline bool IsEmptyBlock(const PitEdgeBlock& /*block*/) { return false; }
 inline bool IsEmptyBlock(const ScanBlock& /*block*/) { return false; }
+inline bool IsEmptyBlock(const ReadoutBlock& /*block*/) { return false; }
 
 // Adapts a stage to the consumer interface: each block is processed by the
 // stage and the result passed downstream. Close() finishes the stage, passes

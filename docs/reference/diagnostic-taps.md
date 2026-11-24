@@ -2,8 +2,7 @@
 
 A **tap** writes the signal between two stages to a file, so each stage can be inspected on its own. Taps are declared in the project's [`diagnostics`](project-file.md#diagnostics) block and never change the RF.
 
-!!! warning "Partly implemented"
-    Taps are written by [carrier-diagnostic](../user-manual/carrier-diagnostic.md) runs, which run the stages up to `fm_phase_modulator`; only those five stages can be tapped today. The later stages' taps are written once disc runs are implemented.
+A disc run can write every tap below. A [carrier-diagnostic](../user-manual/carrier-diagnostic.md) run stops after `fm_phase_modulator`, so only the first five can be tapped there.
 
 Each tap writes two files next to its base `path`: a data file and a YAML descriptor, `<path>.tap.yaml`. All binary data is little-endian.
 
@@ -19,8 +18,8 @@ Each tap writes two files next to its base `path`: a data file and a YAML descri
 | `recording_limiter` | D4 | edges | Recorded transition times |
 | `disc_cutter` | D5 | edges | Pit edges on the disc |
 | `optical_readout` | D8 | sampled | Photocurrent at 80 MHz, unpitted land = 1 |
-| `player_front_end` | D9 | sampled | Player RF at 80 MHz, land = 1 |
-| `rf_capture` | — | sampled | The capture device's analogue signal at 80 MHz, before sampling |
+| `player_front_end` | D9 | sampled | Player RF at 80 MHz, land = 1. With `mtf_equaliser: none` it equals the `optical_readout` tap |
+| `rf_capture` | `D9 filtered` | sampled | The converter's input *u* at 80 MHz, before sampling: ±1 is the converter's range (unit `ADC half-scale`). The converter takes every second sample |
 
 ## Time origin
 
@@ -35,7 +34,7 @@ Data file `<path>.f64`: one IEEE 754 binary64 (`float64`) per sample, no header.
 | `format` | `ld-creator-tap` |
 | `format_version` | `1` |
 | `stage` | The stage module name |
-| `representation` | `D1` … `D9` |
+| `representation` | `D1` … `D9`, or `D9 filtered` for `rf_capture` |
 | `kind` | `sampled` |
 | `data_file` | The data file's name |
 | `unit` | Unit of the samples |

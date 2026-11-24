@@ -73,7 +73,20 @@ Phase 8 keys.
 
 ## Verification
 
-Identity unit test: the trajectory equals the S8 trajectory.
+Identity unit tests (`tests/unit/test_disc_replicator.cpp`): the spot
+trajectory equals the S8 trajectory at every τ for CAV and CLV; the S8
+trajectory's inverse `TimeAtArcLength` and speed `SpeedAt` are checked
+against `ArcLengthAt`.
+
+## Implementation
+
+`LockedPlaybackMechanics` (`src/playback_mechanics/`) passes the edges on
+and converts the D6 arc-length watermark to the playback time at which the
+spot reaches it, through the trajectory's inverse. S11 and S12 read the
+trajectory through `ISpotTrajectory` (arc length, speed and inverse), which
+the Phase 8 impairments implement with their own trajectories. For CAV the
+inverse is the root of x = a·t + b·t²/2 in the form
+t = 2x / (a + √(a² + 2bx)), which does not cancel.
 
 ## Diagnostic tap
 

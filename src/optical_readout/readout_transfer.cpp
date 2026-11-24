@@ -9,10 +9,12 @@
 
 #include "ld_creator/optical_readout/readout_transfer.h"
 
-#include <array>
 #include <cmath>
 #include <cstddef>
 #include <numbers>
+
+#include "ld_creator/dsp/gauss_legendre.h"
+#include "ld_creator/dsp/portable_math.h"
 
 namespace ld_creator {
 
@@ -22,47 +24,8 @@ namespace {
 // ±0.002 numerical tolerance of register S11.mtf_at_reference.
 constexpr std::size_t kQuadratureOrder = 64;
 
-struct GaussLegendreRule {
-  std::array<double, kQuadratureOrder> nodes{};
-  std::array<double, kQuadratureOrder> weights{};
-};
-
-// Gauss–Legendre nodes and weights on [−1, 1], by Newton iteration on the
-// Legendre polynomial from the Chebyshev-like starting point (standard
-// method; deterministic).
-GaussLegendreRule MakeGaussLegendreRule() {
-  GaussLegendreRule rule;
-  constexpr std::size_t n = kQuadratureOrder;
-  constexpr int kNewtonIterations = 100;
-  constexpr double kConvergence = 1e-15;
-  for (std::size_t i = 0; i < n; ++i) {
-    double x = std::cos(std::numbers::pi * (static_cast<double>(i) + 0.75) /
-                        (static_cast<double>(n) + 0.5));
-    double derivative = 0.0;
-    for (int iteration = 0; iteration < kNewtonIterations; ++iteration) {
-      double p0 = 1.0;
-      double p1 = x;
-      for (std::size_t k = 2; k <= n; ++k) {
-        const double kd = static_cast<double>(k);
-        const double p2 = ((2.0 * kd - 1.0) * x * p1 - (kd - 1.0) * p0) / kd;
-        p0 = p1;
-        p1 = p2;
-      }
-      derivative = static_cast<double>(n) * (x * p1 - p0) / (x * x - 1.0);
-      const double step = p1 / derivative;
-      x -= step;
-      if (std::abs(step) < kConvergence) {
-        break;
-      }
-    }
-    rule.nodes[i] = x;
-    rule.weights[i] = 2.0 / ((1.0 - x * x) * derivative * derivative);
-  }
-  return rule;
-}
-
 const GaussLegendreRule& Rule() {
-  static const GaussLegendreRule rule = MakeGaussLegendreRule();
+  static const GaussLegendreRule rule = MakeGaussLegendreRule(kQuadratureOrder);
   return rule;
 }
 
@@ -72,7 +35,7 @@ double GaussianChordIntegral(double beta, double half_chord) {
     return 2.0 * half_chord;
   }
   const double root = std::sqrt(beta);
-  return std::sqrt(std::numbers::pi / beta) * std::erf(root * half_chord);
+  return std::sqrt(std::numbers::pi / beta) * PortableErf(root * half_chord);
 }
 
 // ∫ over the unit disc of exp(−β·ρ²).
@@ -80,7 +43,7 @@ double PupilPower(double beta) {
   if (beta == 0.0) {
     return std::numbers::pi;
   }
-  return std::numbers::pi * (-std::expm1(-beta)) / beta;
+  return std::numbers::pi * (-PortableExpm1(-beta)) / beta;
 }
 
 }  // namespace
@@ -93,17 +56,19 @@ double ReadoutTransfer(double frequency_per_m, double numerical_aperture,
     return 0.0;
   }
   // S11 note: β = −ln(rim-to-centre intensity ratio) (register S11.beta).
-  const double beta = -std::log(rim_intensity);
-  const double theta_max = std::acos(nu / 2.0);
+  const double beta = -PortableLog(rim_intensity);
+  const double theta_max = PortableAcos(nu / 2.0);
   const GaussLegendreRule& rule = Rule();
   double sum = 0.0;
   for (std::size_t i = 0; i < kQuadratureOrder; ++i) {
     const double theta = (rule.nodes[i] + 1.0) * 0.5 * theta_max;
-    const double x = std::cos(theta);
-    const double half_chord = std::sin(theta);
-    const double along = std::exp(-0.5 * beta * (x * x + (x - nu) * (x - nu)));
+    const SinCosValue angle = SinCosRadians(theta);
+    const double x = angle.cos;
+    const double half_chord = angle.sin;
+    const double along =
+        PortableExp(-0.5 * beta * (x * x + (x - nu) * (x - nu)));
     sum += rule.weights[i] * along * GaussianChordIntegral(beta, half_chord) *
-           std::sin(theta);
+           angle.sin;
   }
   // Both halves of the lens, the 0.5·θmax Jacobian of the node mapping, and
   // normalisation by the pupil power so that H(0) = 1.

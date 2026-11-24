@@ -93,13 +93,21 @@ class IDiscReplicator : public IBlockStage<PitEdgeBlock, PitEdgeBlock> {};
 // S10 playback_mechanics: D6 → D7.
 class IPlaybackMechanics : public IBlockStage<PitEdgeBlock, ScanBlock> {};
 
-// S11 optical_readout: D7 → D8.
-class IOpticalReadout : public IBlockStage<ScanBlock, PhotocurrentBlock> {};
+// S11's output: D8, together with the D7 block it was read from. S12's
+// diagnostic inverse equaliser recomputes the RF from the edges (S12 note,
+// "Implementation"), so the edges travel with the photocurrent; that keeps
+// the two streams in step on one thread boundary.
+struct ReadoutBlock {
+  PhotocurrentBlock photocurrent;
+  ScanBlock scan;
+};
 
-// S12 player_front_end: D8 → D9. The diagnostic inverse equaliser also needs
-// the D7 edges, which it receives from S10 when the pipeline is built.
-class IPlayerFrontEnd
-    : public IBlockStage<PhotocurrentBlock, PhotocurrentBlock> {};
+// S11 optical_readout: D7 → D8 (with the D7 edges passed on).
+class IOpticalReadout : public IBlockStage<ScanBlock, ReadoutBlock> {};
+
+// S12 player_front_end: D8 → D9. The diagnostic inverse equaliser reads the
+// D7 edges in the ReadoutBlock rather than the photocurrent.
+class IPlayerFrontEnd : public IBlockStage<ReadoutBlock, PhotocurrentBlock> {};
 
 // S13 rf_capture: D9 → D10.
 class IRfCapture : public IBlockStage<PhotocurrentBlock, RfCodeBlock> {};

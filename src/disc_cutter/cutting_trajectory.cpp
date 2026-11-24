@@ -50,4 +50,24 @@ double CuttingTrajectory::ArcLengthAt(double time_s) const {
   return linear_velocity_m_s_ * time_s;
 }
 
+double CuttingTrajectory::SpeedAt(double time_s) const {
+  if (format_ == DiscFormat::kCav) {
+    return 2.0 * std::numbers::pi * ntsc::kFrameRateHz * RadiusAt(time_s);
+  }
+  return linear_velocity_m_s_;
+}
+
+double CuttingTrajectory::TimeAtArcLength(double arc_length_m) const {
+  if (format_ == DiscFormat::kCav) {
+    // x = a·t + b·t²/2 (ArcLengthAt).
+    const double a =
+        2.0 * std::numbers::pi * ntsc::kFrameRateHz * start_radius_m_;
+    const double b = 2.0 * std::numbers::pi * ntsc::kFrameRateHz *
+                     ntsc::kFrameRateHz * track_pitch_m_;
+    return 2.0 * arc_length_m /
+           (a + std::sqrt((a * a) + (2.0 * b * arc_length_m)));
+  }
+  return arc_length_m / linear_velocity_m_s_;
+}
+
 }  // namespace ld_creator

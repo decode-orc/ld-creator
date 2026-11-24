@@ -25,6 +25,7 @@
 #include "ld_creator/cli/command_line.h"
 #include "ld_creator/diagnostics/byte_sink.h"
 #include "ld_creator/pipeline/carrier_diagnostic_run.h"
+#include "ld_creator/pipeline/disc_run.h"
 #include "ld_creator/pipeline/run_setup.h"
 #include "ld_creator/project/project_validator.h"
 #include "ld_creator_version.h"
@@ -112,22 +113,25 @@ int RunProject(const ld_creator::CommandLineOptions& options) {
     spdlog::info("Project is valid");
     return EXIT_SUCCESS;
   }
-  if (run.config.output.mode != ld_creator::OutputMode::kCarrierDiagnostic) {
-    // S6–S13 are designed but not yet implemented; see
-    // docs-tech/design/high-level-design.md.
-    spdlog::error(
-        "Disc modulation is not implemented yet; only output.mode = "
-        "carrier_diagnostic can be run");
-    return EXIT_FAILURE;
+  const bool carrier_diagnostic =
+      run.config.output.mode == ld_creator::OutputMode::kCarrierDiagnostic;
+  if (carrier_diagnostic) {
+    spdlog::warn("output.mode = carrier_diagnostic: the RF is NOT A DISC");
+  } else {
+    spdlog::info("Capture: {}, level {} of full scale",
+                 ld_creator::ToString(run.config.rf_capture.profile),
+                 run.config.rf_capture.level_fraction);
   }
-
-  spdlog::warn("output.mode = carrier_diagnostic: the RF is NOT A DISC");
   ld_creator::FileByteSinkFactory byte_sinks;
-  ld_creator::CarrierDiagnosticResult result;
+  const ld_creator::RunOutputServices services{.byte_sources = &byte_sources,
+                                               .byte_sinks = &byte_sinks};
+  ld_creator::RfRunResult result;
   try {
-    result = ld_creator::RunCarrierDiagnostic(
-        run, LD_CREATOR_VERSION, threads,
-        {.byte_sources = &byte_sources, .byte_sinks = &byte_sinks});
+    result =
+        carrier_diagnostic
+            ? ld_creator::RunCarrierDiagnostic(run, LD_CREATOR_VERSION, threads,
+                                               services)
+            : ld_creator::RunDisc(run, LD_CREATOR_VERSION, threads, services);
   } catch (const std::exception& error) {
     spdlog::error("Run failed: {}", error.what());
     return EXIT_FAILURE;

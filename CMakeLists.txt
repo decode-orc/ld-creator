@@ -119,16 +119,27 @@ add_library(ld_creator_core
     src/diagnostics/tap_writer.cpp
     src/disc_cutter/cutting_trajectory.cpp
     src/disc_cutter/disc_cutter.cpp
+    src/disc_replicator/disc_replicator.cpp
+    src/dsp/edge_response_table.cpp
+    src/dsp/fft.cpp
     src/dsp/fir_response.cpp
+    src/dsp/gauss_legendre.cpp
     src/dsp/kaiser_window.cpp
     src/dsp/linear_solver.cpp
     src/dsp/monotone_cubic.cpp
     src/dsp/portable_math.cpp
     src/fm_phase_modulator/fm_phase_modulator.cpp
     src/group_delay_predistorter/group_delay_predistorter.cpp
+    src/optical_readout/edge_sum_renderer.cpp
+    src/optical_readout/optical_readout.cpp
+    src/optical_readout/readout_kernel.cpp
     src/optical_readout/readout_transfer.cpp
     src/pipeline/carrier_diagnostic_run.cpp
+    src/pipeline/disc_run.cpp
+    src/pipeline/run_chain.cpp
     src/pipeline/run_setup.cpp
+    src/playback_mechanics/playback_mechanics.cpp
+    src/player_front_end/player_front_end.cpp
     src/project/number_format.cpp
     src/project/project_loader.cpp
     src/project/project_parser.cpp
@@ -137,7 +148,9 @@ add_library(ld_creator_core
     src/project/sha256.cpp
     src/recording_limiter/recording_limiter.cpp
     src/recording_signal_combiner/recording_signal_combiner.cpp
+    src/rf_capture/capture_filter.cpp
     src/rf_capture/capture_quantiser.cpp
+    src/rf_capture/rf_capture.cpp
     src/rf_sample_writer/rf_sample_writer.cpp
     src/video_pre_emphasis/video_pre_emphasis.cpp
     src/video_rate_converter/video_rate_converter.cpp

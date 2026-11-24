@@ -33,6 +33,9 @@ inline constexpr double kHfmiReferenceFrequencyPerM = 802.0e3;
 // the quadrature error is below 1e-12 (checked against the uniform-pupil
 // closed form in the unit tests).
 //
+// Every transcendental function is from dsp/portable_math.h, so the value
+// is the same on every host (HLD §2.3).
+//
 // Returns 1 at frequency 0 and 0 at or above the cut-off 2·NA/λ. Pure
 // function, safe from any thread. Complexity O(1).
 double ReadoutTransfer(double frequency_per_m, double numerical_aperture,

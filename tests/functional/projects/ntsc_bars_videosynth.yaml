@@ -1,0 +1,22 @@
+# videosynth project for the disc-run functional test
+# (tests/functional/test_disc_output.cpp): three frames of SMPTE colour bars,
+# no impairments, generated into the build tree at test time.
+
+project:
+  name: LdCreatorDiscRunFixture
+  version: "1.0"
+  description: Three frames of NTSC SMPTE bars for the ld-creator disc run
+
+cvbs_presets:
+  video_standard_preset: NTSC
+  sample_encoding_preset: CVBS_U10_4FSC
+  signal_state_preset: STANDARD_STABLE_LOCKED
+
+output:
+  video_path: "{output}/ntsc_bars.cvbs"
+
+sections:
+  - name: NtscBars
+    type: progressive
+    source: "{bundled}/exr/720x486/SMPTE_BARS_001.exr"
+    duration_frames: 3

@@ -94,8 +94,8 @@ restore content the spot did not pass. A cosine equaliser would need `a` and
 exactly is the ideal limit of the radius-dependent compensator in
 Isailović App. 3.2.
 
-**Result in the time domain.** The cascade S11 → S12 is an ideal spatial
-low-pass at `fc`. Its line-spread function is `2fc·sinc(2fc·x)` (normalised
+**Result in the time domain.** In the exact form, the cascade S11 → S12 is
+an ideal spatial low-pass at `fc`. Its line-spread function is `2fc·sinc(2fc·x)` (normalised
 sinc) and its edge response is
 
 ```
@@ -116,10 +116,26 @@ blanking-carrier reference is taken after S12).
 
 **Implementation.** Dividing D8 by `H` is ill-conditioned near the cut-off,
 where `H → 0`. Because S11's linear model is a sum of edge responses, S12
-computes `i_eq` from the D7 edges and trajectory with `E` instead. This is
-the same signal, computed exactly. The shortcut holds only for the linear
-readout model; the phase-pit model (plan Task 10.1) will need `G` applied as
-a filter, with a stated gain limit.
+computes `i_eq` from the D7 edges and trajectory with the edge-sum renderer
+of S11 instead, with a band-limited kernel in place of the spot's. The
+shortcut holds only for the linear readout model; the phase-pit model (plan
+Task 10.1) will need `G` applied as a filter, with a stated gain limit.
+
+The ideal low-pass's sinc kernel decays only as 1/x and cannot be cut off,
+so the implemented kernel (register `S12.equaliser_kernel`) is the
+Kaiser-windowed sinc
+`k(u) = 2fe·sinc(2fe·u)·w_K(u/W)`, W = 20 µm, with β = 0.1102·(A − 8.7)
+for A = 122 dB, and the transition width Δν = D/(2W) from Kaiser's
+formula D = (A − 7.95)/14.36, so Δν = 199 cycles/mm. The band edge is
+fe = fc − Δν/2, so the transition ends at the cut-off: the RF never holds
+spatial frequencies the optics did not pass, and stays below the 80 MHz
+readout rate's Nyquist frequency at every radius. With nominal optics the
+response is 1 ± 1e-6 up to 0.843·fc and below 1e-6 from fc, so `G = K/H`
+is the exact inverse wherever `H > 0.05` (ν < 0.833·fc), as the
+verification asks, and tapers to nothing between 0.843·fc and fc. (A =
+120 dB, the target itself, leaves a stop-band lobe of 1.2e-6; the 2 dB
+margin covers it.) The edge response peaks at 1.0895, the Gibbs overshoot
+of the exact form.
 
 **Sampling.** `i_eq` is band-limited to `fc·v ≤ 35.7 MHz`, as D8 is, so the
 80 MHz readout rate still introduces no aliasing.
@@ -143,6 +159,7 @@ carrier-diagnostic baseline ([metrics](../ntsc-round-trip-metrics.md)).
 |--------------|-------|
 | `S12.profile` | `iec_reference` (flat, unity, noiseless preamplifier) |
 | `S12.mtf_equaliser` | `none` (declared: test-point RF); `inverse` is diagnostic |
+| `S12.equaliser_kernel` | Kaiser-windowed sinc, A = 122 dB, W = 20 µm, fe = fc − Δν/2 (declared) |
 
 ## Assumptions and approximations
 
@@ -183,18 +200,21 @@ their sources in plan Task 9.3.
 
 ## Verification
 
+`tests/unit/test_player_front_end.cpp`:
+
 - `none`: identity unit test.
-- `inverse`: for a constant-frequency pit train, the D9 fundamental equals
-  the pit pattern's fundamental, `(4/π)·m/2` peak, at every radius where it
-  lies below the cut-off. The spectrum of D9 divided by that of D8 equals
-  `1/H` within 10⁻⁶ wherever `H > 0.05`. The edge response reproduces the
-  `Si` form above.
+- `inverse`: the kernel's transfer is 1 within 1e-6 up to 0.843·fc and 0
+  within 1e-6 from fc, and H < 0.05 at 0.843·fc. For constant-frequency pit
+  trains at 297, 772 and 966 pits/mm, the D9 fundamental equals the pit
+  pattern's, `(4/π)·m/2` peak, within 2e-6, and D9/D8 equals `1/K_S11`
+  within 2e-6 relative, where `K_S11` is the S11 kernel's transfer (which
+  equals H within 1.1e-4; S11 note). The edge response peaks at the Gibbs
+  value 1.0895 of the `Si` form.
 
 ## Diagnostic tap
 
-`player_front_end`: D9 as `float64` at Fr with a descriptor (written only
-when `mtf_equaliser` is `inverse`; with `none` it is identical to the S11
-tap).
+`player_front_end`: D9 as `float64` at Fr with a descriptor. With `none`
+it is identical to the S11 tap.
 
 ## Open items
 

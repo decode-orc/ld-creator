@@ -1,7 +1,7 @@
 # RF Output
 
 !!! warning "Partly implemented"
-    ld-creator writes RF for [carrier-diagnostic](../user-manual/carrier-diagnostic.md) runs only. RF from a modelled disc (`output.mode: disc`) is not implemented yet.
+    The RF carries the NTSC video signal only. Audio, EFM and PAL are planned.
 
 ## File formats
 
@@ -25,6 +25,10 @@ The [`rf_capture.profile`](project-file.md#rf_capture) sets what a word holds:
 | `ideal` | signed 16-bit | the code itself |
 
 The converter input *u* runs from −1 to +1 across its range and is quantised to round(512 + 512·*u*) or round(32768·*u*), clamped to the range. Clamped samples are counted, and the run warns if there are any.
+
+## Disc RF
+
+With `output.mode: disc` (the default), *u* is the capture device's input: the player RF after the capture profile's filters, scaled so that the blanking-level carrier at the start radius has a peak-to-peak amplitude of `level_fraction` of full scale (75 % by default: 768 codes with the Domesday Duplicator profile). Parts of the picture that the readout attenuates less than the blanking carrier, such as sync, use the headroom above it. See [Disc model](../user-manual/disc-model.md).
 
 ## Carrier-diagnostic RF
 

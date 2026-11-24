@@ -83,7 +83,10 @@ int RunExecutable(const std::string& arguments) {
 class ExampleProjectsTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    output_root_ = fs::path(test::kBinaryDir) / "functional" / "examples";
+    // One directory per test, so ctest can run them in parallel.
+    output_root_ =
+        fs::path(test::kBinaryDir) / "functional" / "examples" /
+        ::testing::UnitTest::GetInstance()->current_test_info()->name();
     WriteInputMedia(output_root_, kExampleFrames);
   }
 

@@ -36,9 +36,6 @@ On success ld-creator logs the input, the disc's radius range and the output pat
 
 Without `--validate`, ld-creator runs the project after the same checks. It writes the RF to `output.rf_path`, every declared diagnostic tap, and the [resolved project](../reference/project-file.md#the-resolved-project) beside the RF, then logs the number of samples written.
 
-!!! warning "Partly implemented"
-    Only [carrier-diagnostic](carrier-diagnostic.md) projects (`output.mode: carrier_diagnostic`) can be run. A disc project passes the checks and then exits with a non-zero status, writing nothing.
-
 `--threads` sets how many threads the stages share; the RF is byte-identical for any value.
 
 ## Exit status
@@ -46,4 +43,4 @@ Without `--validate`, ld-creator runs the project after the same checks. It writ
 | Status | Meaning |
 |--------|---------|
 | `0` | `--help` or `--version` completed, `--validate` found no errors, or a run completed |
-| non-zero | Invalid arguments, a log file could not be opened, a project or input error, a read or write failure during the run, or (currently) a disc run was requested |
+| non-zero | Invalid arguments, a log file could not be opened, a project or input error, or a read or write failure during the run |

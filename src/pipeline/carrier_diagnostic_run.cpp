@@ -36,166 +36,20 @@ namespace {
 // memory and speed only.
 constexpr std::int64_t kLinesPerBlock = 35;
 
-// Blocks queued at each thread handoff.
-constexpr std::size_t kHandoffCapacity = 4;
-
-// Passes bytes on and hashes them.
-class HashingByteSink final : public IByteSink {
- public:
-  explicit HashingByteSink(std::unique_ptr<IByteSink> sink)
-      : sink_(std::move(sink)) {}
-  void Write(std::span<const std::byte> bytes) override {
-    hash_.Update(bytes);
-    sink_->Write(bytes);
-  }
-  void Close() override { sink_->Close(); }
-  std::string HexDigest() { return hash_.HexDigest(); }
-
- private:
-  std::unique_ptr<IByteSink> sink_;
-  Sha256 hash_;
-};
-
-// The end of the chain: S14.
-class RfSinkConsumer final : public IBlockConsumer<RfCodeBlock> {
- public:
-  explicit RfSinkConsumer(IRfSampleSink* sink) : sink_(sink) {}
-  void Consume(RfCodeBlock&& block) override { sink_->Write(block); }
-  void Close() override { sink_->Finish(); }
-
- private:
-  IRfSampleSink* sink_;
-};
-
-std::span<const double> TapSamples(const IreSampleBlock& block) {
-  return block.ire;
-}
-std::span<const double> TapSamples(const CarrierPhaseBlock& block) {
-  return block.phase_rad;
-}
-
-// Writes the passing stream to a tap, then forwards it unchanged.
-template <typename Block>
-class SampledTapNode final : public IBlockConsumer<Block> {
- public:
-  SampledTapNode(std::unique_ptr<SampledTapWriter> writer,
-                 IBlockConsumer<Block>* downstream)
-      : writer_(std::move(writer)), downstream_(downstream) {}
-  void Consume(Block&& block) override {
-    writer_->Write(block.first_sample, TapSamples(block));
-    downstream_->Consume(std::move(block));
-  }
-  void Close() override {
-    writer_->Finish();
-    downstream_->Close();
-  }
-
- private:
-  std::unique_ptr<SampledTapWriter> writer_;
-  IBlockConsumer<Block>* downstream_;
-};
-
-// One stream's tap description.
-struct StreamTap {
-  const char* stage;
-  const char* representation;
-  const char* unit;
-  SampleClock clock;
-  std::int64_t samples_per_frame;
-};
-
-// Owns the chain's nodes and destroys them newest first, so every thread
-// handoff stops before the nodes downstream of it go.
-class ChainNodes {
- public:
-  ChainNodes() = default;
-  ChainNodes(const ChainNodes&) = delete;
-  ChainNodes& operator=(const ChainNodes&) = delete;
-  ~ChainNodes() {
-    while (!nodes_.empty()) {
-      nodes_.pop_back();
-    }
-  }
-  template <typename Node, typename... Args>
-  Node* Add(Args&&... args) {
-    auto node = std::make_shared<Node>(std::forward<Args>(args)...);
-    Node* raw = node.get();
-    nodes_.push_back(std::move(node));
-    return raw;
-  }
-
- private:
-  std::vector<std::shared_ptr<void>> nodes_;
-};
-
-class ChainBuilder {
- public:
-  ChainBuilder(const PreparedRun& run, IByteSinkFactory* sinks,
-               unsigned int threads, std::size_t boundaries)
-      : run_(run),
-        sinks_(sinks),
-        handoffs_(PlaceHandoffs(boundaries, threads)) {}
-
-  // Puts the taps for `tap` in front of `downstream`, then a thread handoff
-  // if boundary `boundary` has one.
-  template <typename Block>
-  IBlockConsumer<Block>* Upstream(IBlockConsumer<Block>* downstream,
-                                  const StreamTap& tap, std::size_t boundary) {
-    IBlockConsumer<Block>* consumer = downstream;
-    for (const TapConfig& config : run_.config.taps) {
-      if (config.stage != tap.stage) {
-        continue;
-      }
-      const std::int64_t begin = config.first_frame * tap.samples_per_frame;
-      const std::int64_t end =
-          begin + (config.frame_count * tap.samples_per_frame);
-      auto writer = std::make_unique<SampledTapWriter>(
-          sinks_, config.path,
-          TapIdentity{.stage = tap.stage,
-                      .representation = tap.representation,
-                      .unit = tap.unit,
-                      .first_frame = config.first_frame,
-                      .frame_count = config.frame_count},
-          tap.clock, begin, end);
-      consumer = nodes_.Add<SampledTapNode<Block>>(std::move(writer), consumer);
-    }
-    if (handoffs_[boundary]) {
-      consumer = nodes_.Add<ThreadedHandoff<Block>>(consumer, kHandoffCapacity);
-    }
-    return consumer;
-  }
-
-  [[nodiscard]] bool HasHandoff(std::size_t boundary) const {
-    return handoffs_[boundary];
-  }
-  ChainNodes& Nodes() { return nodes_; }
-
- private:
-  const PreparedRun& run_;
-  IByteSinkFactory* sinks_;
-  std::vector<bool> handoffs_;
-  ChainNodes nodes_;
-};
-
 }  // namespace
 
-CarrierDiagnosticResult RunCarrierDiagnostic(
-    const PreparedRun& run, const std::string& ld_creator_version,
-    unsigned int threads, const RunOutputServices& services) {
+RfRunResult RunCarrierDiagnostic(const PreparedRun& run,
+                                 const std::string& ld_creator_version,
+                                 unsigned int threads,
+                                 const RunOutputServices& services) {
   assert(services.byte_sources != nullptr);
   assert(services.byte_sinks != nullptr);
   const ProjectConfig& config = run.config;
 
-  ResolvedRecord record;
-  record.ld_creator_version = ld_creator_version;
-  {
-    const std::unique_ptr<IByteSource> meta =
-        services.byte_sources->Open(run.meta_path);
-    record.meta_sha256 = HashByteSource(meta.get());
-  }
+  ResolvedRecord record =
+      HashRunInputs(run, ld_creator_version, services.byte_sources);
   const std::unique_ptr<IByteSource> video =
       services.byte_sources->Open(config.input.video_path);
-  record.cvbs_sha256 = HashByteSource(video.get());
 
   CvbsVideoInput input(video.get(), run.encoding, config.input.first_frame,
                        run.frame_count, kLinesPerBlock);
@@ -222,10 +76,7 @@ CarrierDiagnosticResult RunCarrierDiagnostic(
     auto* sink = nodes.Add<RfSinkConsumer>(&writer);
     IBlockConsumer<RfCodeBlock>* to_sink = sink;
     // No taps exist between the renderer and S14 in this mode.
-    if (chain.HasHandoff(5)) {
-      to_sink =
-          nodes.Add<ThreadedHandoff<RfCodeBlock>>(to_sink, kHandoffCapacity);
-    }
+    to_sink = chain.Handoff(to_sink, 5);
     auto* render_node = nodes.Add<StageNode<CarrierPhaseBlock, RfCodeBlock>>(
         &renderer, to_sink);
     IBlockConsumer<CarrierPhaseBlock>* to_render = chain.Upstream(
@@ -263,18 +114,13 @@ CarrierDiagnosticResult RunCarrierDiagnostic(
     RunVideoSource(&input, to_s2);
   }
 
-  CarrierDiagnosticResult result;
+  RfRunResult result;
   result.rf_samples = writer.SamplesWritten();
   result.clipped_samples = renderer.ClippedSamples();
   result.rf_sha256 = rf_hash->HexDigest();
   record.rf_sha256 = result.rf_sha256;
-
-  result.resolved_path = ResolvedProjectPath(config.output.rf_path);
-  const std::unique_ptr<IByteSink> resolved =
-      services.byte_sinks->Create(result.resolved_path);
-  WriteText(resolved.get(),
-            EmitResolvedProject(config, run.frame_count, record));
-  resolved->Close();
+  result.resolved_path =
+      WriteResolvedProjectFile(run, record, services.byte_sinks);
   return result;
 }
 

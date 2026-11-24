@@ -16,10 +16,6 @@ ld-creator rejects options it does not recognise. Run `ld-creator --help` for th
 
 Every run needs a project file: `ld-creator --project disc.yaml`. Only `--help` and `--version` work without one.
 
-## "Disc modulation is not implemented yet; only output.mode = carrier_diagnostic can be run"
-
-Expected at this stage of development. A disc project (`output.mode: disc`, the default) is checked and then stops, writing nothing. Use `--validate` to run the checks and exit successfully, or set `output.mode: carrier_diagnostic` to write the FM carrier as a [carrier diagnostic](../user-manual/carrier-diagnostic.md).
-
 ## "output.mode = carrier_diagnostic: the RF is NOT A DISC"
 
 A warning, logged at the start of every carrier-diagnostic run as a reminder that the file is the bare FM carrier, without any disc stage.
@@ -27,6 +23,8 @@ A warning, logged at the start of every carrier-diagnostic run as a reminder tha
 ## "N RF samples clipped at the converter's range"
 
 A warning: N samples fell outside the converter's range and were clamped to its end codes. In a carrier-diagnostic run this happens only with `rf_capture.level_fraction` at or very near 1.0, where the carrier's peaks reach full scale; lower it to leave headroom.
+
+In a disc run the level is set on the blanking-level carrier, and lower carrier frequencies come out larger, because the readout attenuates them less. Sync reaches about 85 % of full scale at the default 75 %. Video that is not a valid NTSC signal, such as a jump straight from white to sync tip, drives the carrier further down through pre-emphasis and can clip. Lower `rf_capture.level_fraction` if it does.
 
 ## "Run failed: …"
 

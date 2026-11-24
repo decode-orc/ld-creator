@@ -53,8 +53,9 @@ Not applicable.
 ## Verification
 
 Unit tests: codes 0, 512 and 1023 map to −32768, 0 and 32704. Functional
-test: the file length is 2 bytes × samples; re-running from the resolved
-project gives the same bytes.
+tests (`test_carrier_diagnostic_output.cpp`, `test_disc_output.cpp`): the
+file length is 2 bytes × samples; re-running from the resolved project gives
+the same bytes; a disc run's bytes do not depend on the thread count.
 
 ## Diagnostic tap
 

@@ -33,6 +33,15 @@ class CuttingTrajectory {
   [[nodiscard]] double RadiusAt(double time_s) const;
   [[nodiscard]] double ArcLengthAt(double time_s) const;
 
+  // Track speed dx/dt in m/s: 2π·fr·r(t) for CAV, v for CLV.
+  [[nodiscard]] double SpeedAt(double time_s) const;
+
+  // The inverse of ArcLengthAt for x ≥ 0: the time at which the spot reaches
+  // arc length `arc_length_m`. CAV solves the quadratic in the form that
+  // does not cancel, t = 2x / (a + √(a² + 2·b·x)), a = 2π·fr·r₀,
+  // b = 2π·fr²·p.
+  [[nodiscard]] double TimeAtArcLength(double arc_length_m) const;
+
  private:
   DiscFormat format_;
   double start_radius_m_;

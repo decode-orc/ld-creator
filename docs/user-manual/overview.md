@@ -4,7 +4,7 @@ ld-creator turns a CVBS recording into LaserDisc RF in three parallel paths that
 
 | Path | Input | What happens | Status |
 |------|-------|--------------|--------|
-| Video | `.cvbs` + `.meta` | Group-delay pre-distorted, pre-emphasised and frequency-modulated onto the main carrier (IEC 60857 §9.1.7, §9.2) | NTSC carrier implemented ([carrier diagnostic](carrier-diagnostic.md)); disc stages planned |
+| Video | `.cvbs` + `.meta` | Group-delay pre-distorted, pre-emphasised and frequency-modulated onto the main carrier (IEC 60857 §9.1.7, §9.2) | NTSC implemented, on the ideal disc ([disc model](disc-model.md)) |
 | Analogue audio | `_audio_<pair>.wav` | Two FM subcarriers, pulse-width modulated onto the main carrier (§7.2, §8) | Planned |
 | EFM digital audio | `.efm` + `.efm.meta` | Filtered EFM signal, pulse-width modulated onto the main carrier (Amendment 2 §13) | Planned |
 

@@ -12,6 +12,8 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <limits>
+#include <numbers>
 
 namespace ld_creator {
 
@@ -81,6 +83,158 @@ double SinTurns(double turns) { return SinCosTurns(turns).sin; }
 
 SinCosValue SinCosRadians(double radians) {
   return SinCosTurns(radians / kTwoPi);
+}
+
+namespace {
+
+// ln 2 = kLn2High + kLn2Low. kLn2High has its low 11 bits clear, so k·kLn2High
+// is exact for |k| < 2^11 (Cody & Waite).
+constexpr double kLn2High = 6.93147180369123816490e-01;
+constexpr double kLn2Low = 1.90821492927058770002e-10;
+constexpr double kLn2 = 0.6931471805599453;
+constexpr double kExpUnderflow = -745.2;
+constexpr double kExpOverflow = 709.78;
+constexpr std::size_t kExpSeriesDegree = 20;
+
+constexpr std::array<double, kExpSeriesDegree + 1> ExpCoefficients() {
+  std::array<double, kExpSeriesDegree + 1> values{};
+  values[0] = 1.0;
+  for (std::size_t n = 1; n < values.size(); ++n) {
+    values[n] = values[n - 1] / static_cast<double>(n);
+  }
+  return values;
+}
+
+constexpr std::array<double, kExpSeriesDegree + 1> kExpCoefficient =
+    ExpCoefficients();
+
+// e^r − 1 for |r| ≤ ½ ln 2, Taylor series by Horner's rule.
+double SeriesExpm1(double r) {
+  double sum = 0.0;
+  for (std::size_t n = kExpSeriesDegree; n >= 1; --n) {
+    sum = kExpCoefficient[n] + r * sum;
+  }
+  return r * sum;
+}
+
+}  // namespace
+
+double PortableExp(double x) {
+  if (x < kExpUnderflow) {
+    return 0.0;
+  }
+  if (x > kExpOverflow) {
+    return std::numeric_limits<double>::infinity();
+  }
+  const double k = std::round(x / kLn2);
+  const double r = (x - k * kLn2High) - k * kLn2Low;
+  return std::ldexp(1.0 + SeriesExpm1(r), static_cast<int>(k));
+}
+
+double PortableExpm1(double x) {
+  if (std::abs(x) <= 0.5 * kLn2) {
+    return SeriesExpm1(x);
+  }
+  return PortableExp(x) - 1.0;
+}
+
+double PortableLog(double x) {
+  if (!(x > 0.0)) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  if (std::isinf(x)) {
+    return x;
+  }
+  int exponent = 0;
+  double mantissa = std::frexp(x, &exponent);  // [0.5, 1)
+  if (mantissa < std::numbers::sqrt2 / 2.0) {
+    mantissa *= 2.0;
+    --exponent;
+  }
+  const double z = (mantissa - 1.0) / (mantissa + 1.0);
+  const double z2 = z * z;
+  // 2·atanh z = 2·Σ z^(2k+1)/(2k+1), k = 0 … 20.
+  constexpr int kLogSeriesTerms = 21;
+  double sum = 0.0;
+  for (int k = kLogSeriesTerms - 1; k >= 0; --k) {
+    sum = 1.0 / static_cast<double>(2 * k + 1) + z2 * sum;
+  }
+  const double e = static_cast<double>(exponent);
+  return (e * kLn2High) + ((2.0 * z * sum) + (e * kLn2Low));
+}
+
+double PortableErf(double x) {
+  constexpr double kErfSaturation = 6.0;
+  constexpr double kSeriesLimit = 2.5;
+  // 1/√π.
+  constexpr double kInverseRootPi = 0.5641895835477563;
+  const double magnitude = std::abs(x);
+  double value = 1.0;
+  if (magnitude > kErfSaturation) {
+    value = 1.0;
+  } else if (magnitude <= kSeriesLimit) {
+    const double x2 = magnitude * magnitude;
+    double term = magnitude;
+    double sum = magnitude;
+    for (int n = 1;; ++n) {
+      term *= 2.0 * x2 / static_cast<double>(2 * n + 1);
+      const double next = sum + term;
+      if (next == sum) {
+        break;
+      }
+      sum = next;
+    }
+    value = 2.0 * kInverseRootPi * PortableExp(-x2) * sum;
+  } else {
+    // erfc x = e^(−x²)/√π · 1/(x + ½/(x + 1/(x + (3/2)/(x + …)))),
+    // evaluated from the tail (Abramowitz & Stegun 7.1.14).
+    constexpr int kFractionTerms = 60;
+    double tail = magnitude;
+    for (int n = kFractionTerms; n >= 1; --n) {
+      tail = magnitude + (0.5 * static_cast<double>(n)) / tail;
+    }
+    value = 1.0 - (kInverseRootPi * PortableExp(-magnitude * magnitude) / tail);
+  }
+  return x < 0.0 ? -value : value;
+}
+
+double PortableAtan(double x) {
+  const double magnitude = std::abs(x);
+  const bool inverted = magnitude > 1.0;
+  double t = inverted ? 1.0 / magnitude : magnitude;
+  // Two halvings: |t| ≤ tan(π/16) ≈ 0.199.
+  constexpr int kHalvings = 2;
+  for (int i = 0; i < kHalvings; ++i) {
+    t = t / (1.0 + std::sqrt(1.0 + (t * t)));
+  }
+  const double t2 = t * t;
+  constexpr int kAtanSeriesTerms = 20;
+  double sum = 0.0;
+  for (int k = kAtanSeriesTerms - 1; k >= 0; --k) {
+    const double coefficient = 1.0 / static_cast<double>(2 * k + 1);
+    sum = (k % 2 == 0 ? coefficient : -coefficient) + t2 * sum;
+  }
+  double value = 4.0 * t * sum;
+  if (inverted) {
+    value = (0.5 * std::numbers::pi) - value;
+  }
+  return x < 0.0 ? -value : value;
+}
+
+double SmoothStepDown(double s) {
+  if (s <= 0.0) {
+    return 1.0;
+  }
+  if (s >= 1.0) {
+    return 0.0;
+  }
+  const double rising = PortableExp(-1.0 / s);
+  const double falling = PortableExp(-1.0 / (1.0 - s));
+  return falling / (rising + falling);
+}
+
+double PortableAcos(double y) {
+  return 2.0 * PortableAtan(std::sqrt((1.0 - y) / (1.0 + y)));
 }
 
 }  // namespace ld_creator

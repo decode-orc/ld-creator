@@ -1,0 +1,19 @@
+# ld-creator project for the disc-run functional test: the ideal NTSC CAV
+# disc at the inner radius, from the videosynth fixture beside it. Every
+# other key takes its ideal default.
+
+project:
+  name: NtscBarsDisc
+  version: "1.0"
+  description: Ideal NTSC CAV disc from three frames of SMPTE bars
+
+input:
+  video_path: "{output}/ntsc_bars.cvbs"
+
+disc_cutter:
+  format: cav
+  start_radius_mm: 55.0
+  track_pitch_um: 1.6667
+
+output:
+  rf_path: "{output}/ntsc_bars.s16"
