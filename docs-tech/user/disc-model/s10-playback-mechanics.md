@@ -86,5 +86,9 @@ None at the ideal setting.
   ([Isailović 1985](secondary-sources.md#isailović-videodisc-and-optical-memory-systems-1985)) give the dominant shape: eccentricity
   `R(t) = R + ΔR·cos ω_d t` at the rotation rate, with timing error
   `ΔR/(ωR)` (10 µs for 100 µm at 55 mm, matching §4.19) and higher-frequency
-  error falling about 12 dB per octave (also §4.19). Shapes above the
-  rotation rate are not given.
+  error falling about 12 dB per octave (also §4.19). Approximate shape above
+  the rotation rate ([approximate figures](secondary-sources.md#approximate-figures-from-the-final-search)): the tangential
+  loop gives 70 dB at 30 Hz and about 1.6 kHz bandwidth (Isailović
+  Fig. 3-47); residuals about 80 ns from sync and 5 ns from burst after an
+  electronic TBC (US 4,468,709); a 60 Hz line from the vertical interval
+  (US 4,425,583). Magnitudes at harmonics of 30 Hz are not given.

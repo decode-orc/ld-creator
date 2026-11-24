@@ -217,10 +217,27 @@ predicted HFMI is inside Figure 18.
 
 ## Open items
 
-- Confirm the Gaussian pupil weighting of the transfer function against
-  Hopkins (1979) or Bouwhuis et al. (1985), both paywalled or loan-only. The
-  structure (pupil overlap) and the `2NA/λ` cut-off are confirmed by
-  Isailović §5.4.2 and §5.6 for a uniform pupil.
+- **Resolved: the Gaussian pupil weighting applies once.** van de Nes,
+  Braat & Pereira (2006) §2.3, eqs (4)–(7)
+  ([secondary sources](secondary-sources.md#open-access-sources-from-the-wider-search))
+  write the reflected pupil field from the incident pupil field `A` and
+  integrate it over the exit pupil with no further weighting, so the beam
+  profile enters the transfer function once, as this note's model does.
+  Kondo (1993) models an optical head the same way. The structure and the
+  `2NA/λ` cut-off are also confirmed by Isailović §5.4.2 and §5.6. The
+  literal `g = f` in Braat, Dirksen & Janssen §6.2 would apply the weighting
+  twice; it is read as covering the lens's own aperture and aberrations,
+  since the Gaussian is the incoming beam's profile and not a property of
+  the lens. Checks ([approximate figures](secondary-sources.md#approximate-figures-from-the-final-search)): the integration gives the
+  analytic uniform-pupil value (0.2507), and Toshiba's calculated roll-off
+  for a 1990 Hi-Vision videodisc agrees with the model within about 1–2 dB
+  at the same normalised frequency. Hopkins (1979) would still be a welcome
+  direct check. The
+  choice mattered. At 55 mm on the 8.1 MHz carrier, the uncompensated chroma
+  error at 3.58 MHz (narrow-band estimate below) is +1.2 dB with a uniform
+  pupil, +2.7 dB with the Gaussian applied once (this note's model), and
+  +4.6 dB with it applied on both paths. HFMI at 802 pits/mm is 0.250, 0.213
+  and 0.168 respectively.
 - **Effect on demodulated video (prediction for Phase 6).** With the FM
   narrow-band approximation of Isailović eqs 6-17 and 6-18, a component at
   video frequency `f_m` demodulates with gain `(a + b)/2`, where `a` and `b`

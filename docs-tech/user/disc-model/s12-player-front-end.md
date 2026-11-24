@@ -28,6 +28,20 @@ and the demodulated video depends on radius.
   phase". Without it, chroma demodulates larger relative to luma at the
   inner radius. §3.1 computes 13.2 MHz as the optical cut-off at the 55 mm
   inner radius, the same figure as the DdD guide's stop-band.
+- Pioneer LD-V4300D Service Manual
+  ([domesday86.com](https://www.domesday86.com/wp-content/uploads/2018/09/Pioneer-LD-V4300D-Service-Manual-DD86_2.pdf)),
+  the DomesdayDuplicator's reference player. The DdD taps TP1 pin 1 ("RF")
+  on the FTSB assembly (DdD docs, `docs/content/ldv4300d/rf-output.md`).
+  The FTSB schematic (PDF p. 23) shows the pickup's OEIC (PA0037,
+  photodiode with integrated amplifier) feeding emitter followers Q1 and Q2
+  (2SC1740S), with VR1 "RF GAIN" between them, then R5 (47 Ω) and C9
+  (1 µF) to TP1-1 and to the AUDB assembly. There is no intended filter on
+  this path. On the AUDB assembly (PDF p. 24) the same net is loaded by
+  R451 (330 Ω) and feeds Q301–Q303, labelled **"RF EQ AMP"**, whose
+  emitter network (560 Ω in parallel with 22 pF) boosts high frequencies.
+  The equalised RF then goes to the VDEM assembly's filters and the video
+  demodulator (block diagram, PDF p. 94). **So the DdD captures before the
+  player's equaliser.**
 - ld-decode's command line (interface only): `-m/--MTF`, "mtf compensation
   multiplier", and `--MTF_offset`. Its help states that NTSC uses a readout
   MTF model. So by default ld-decode expects RF that has **not** been
@@ -134,9 +148,11 @@ carrier-diagnostic baseline ([metrics](../ntsc-round-trip-metrics.md)).
 
 - Flat, noiseless preamplifier. Error against a real player: player-specific;
   this is what plan Task 9.3 adds.
-- Test-point RF is unequalised. This is the input ld-decode's own MTF
-  compensation implies. Whether a particular player's test point follows its
-  equaliser is a per-player open item (below).
+- Test-point RF is unequalised. For the reference player this is sourced:
+  the LD-V4300D's TP1-1 comes before its RF EQ AMP (Sources). It is also
+  the input ld-decode's own MTF compensation implies. The response of the
+  pickup's OEIC up to the optical cut-off is not documented, so it is
+  modelled as flat.
 - The diagnostic equaliser tracks the scanning speed exactly and has unlimited gain
   below the cut-off. This is exact for a noiseless disc. With noise
   (Phase 9), unlimited gain near the cut-off amplifies noise without bound,
@@ -184,8 +200,12 @@ tap).
 
 - Digitising BBC Fig. 8 into a documented response, with the digitising
   method and its reading error (plan Task 9.3).
-- Whether the RF test point of a typical player follows the player's RF
-  low-pass filter (the 13.2 MHz stop-band noted in the DomesdayDuplicator
-  guide) and its MTF equaliser (Isailović §3.4). Player-specific; needs a
-  service manual source per player.
+- The frequency response of the LD-V4300D's pickup OEIC (PA0037). No
+  datasheet has been found. Pickup OEICs of the period suggest a −3 dB
+  point of roughly 15–25 MHz (Sharp, 1997: 18–21 MHz;
+  [approximate figures](secondary-sources.md#approximate-figures-from-the-final-search)), a few tenths of a dB at the carrier;
+  measurable in Task 10.2. The discrete FTSB stage after it has no
+  intended filter; its AC coupling (C9 into the load) is far below the FM
+  band.
+- Other players' test points (plan Task 9.3), from their service manuals.
 - Gain limit for the diagnostic equaliser once noise exists (Phase 9).

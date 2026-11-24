@@ -148,6 +148,25 @@ amount; no clipping on any test pattern at the default level.
 
 - Netlist extraction of the filter topology from `RF Amplifier.kicad_sch`
   (plan Task 5.3).
-- ADS825 transfer function (code transition points, full-scale accuracy) from
-  its datasheet.
-- DE0-Nano oscillator frequency tolerance (later clock-error impairment).
+- ADS825 transfer function. The datasheet (TI SBAS069B, 2002) is now read;
+  it has no per-code transition data, so the declared `Q` stands. The DdD
+  ties RSEL high and INT/EXT low (ADC schematic), which the datasheet
+  (p. 9) names as the 2 V p-p, internal-reference configuration. Figures for
+  a later non-ideal ADC: straight offset binary, REFB → code 0, REFT →
+  full scale (Table I, p. 12), matching `Q`; DNL ±0.25 typ / ±1.0 max LSB
+  and INL ±0.5 typ / ±2.0 max LSB at 1 MHz; no missing codes "Tested";
+  gain error including the internal reference ±1.5 typ / ±3.5 max % FS;
+  zero error ±1.0 typ / ±3.0 max % FS; REFT and REFB ±25 mV max; SNR
+  60 dB and SINAD 58 dB typ at 10 MHz; output noise 0.2 LSB rms; aperture
+  delay 3 ns, jitter 1.2 ps rms; input bandwidth 300 MHz; latency 5 clocks
+  (pp. 2–4). Gain and zero error are specified at 25 °C and 2.5 MHz only.
+- DE0-Nano oscillator tolerance (later clock-error impairment). Terasic's
+  schematic marks Y1 only "50MHZ", with no part or ppm. The DdD clock is
+  exactly 50 MHz × 8/5 ÷ 2 (`fpga/common/IPpllGenerator.v`; ADC clock
+  toggled from the 80 MHz PLL output in `DomesdayDuplicator.v`), so the
+  oscillator's error reaches the sample rate unchanged. Approximate value:
+  ±50 ppm, typical of 3.3 V 50 MHz SMD oscillators (ECS-3225MV, SiT8008:
+  ±20 to ±100 ppm). Cyclone IV PLL output jitter on a regular I/O pin is at
+  most 75 mUI peak-to-peak (Table 1–25), about 67 ps rms at 80 MHz as a
+  worst-case bound, against the ADC's own 1.2 ps
+  ([approximate figures](secondary-sources.md#approximate-figures-from-the-final-search)).

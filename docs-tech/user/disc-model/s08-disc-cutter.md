@@ -27,6 +27,12 @@ the laser is on, the exposed resist is later developed away and leaves a pit.
   §2.3.1.4, the cut edges mark the zero crossings of the limited signal;
   App. 2.2, the exposure model; §2.3.1.2, edge distortion of about 0.1 µm;
   §2.3.1.6, the 40–60 % duty-cycle acceptance limit.
+- US 4,456,914 and US 4,422,904 (MCA DiscoVision; [secondary sources](secondary-sources.md#open-access-sources-from-the-wider-search)):
+  a LaserVision recorder with a 0.75 NA objective and a 0.8 µm spot, the
+  beam's half-peak intensity set equal to the resist threshold, and a
+  biasing servo that holds the duty cycle at 50/50. This supports zero
+  length bias as the ideal setting: production recorders were servoed to
+  remove it.
 
 ## Model and equations
 
@@ -156,6 +162,11 @@ formula.
 
 - Values for the cutting-spot profile `h`, the thresholds E₁ and E₂, and
   hence the pit length bias, width and edge slope (Phase 8). The model form
-  and a bound on the bias are now sourced (above); the values need resist and
-  recorder data (Jacobs 1978, Pasman et al. 1985;
-  [secondary sources](secondary-sources.md)).
+  and a bound on the bias are now sourced (above), and so are the recorder's
+  NA, spot size and threshold rule (US 4,456,914). Approximate values
+  ([approximate figures](secondary-sources.md#approximate-figures-from-the-final-search)): recorder line argon 457.9 nm (Sony
+  US 4,152,726); AZ 1350J Dill constants at 436 nm (Kim 1984) and 404.7 nm
+  (Dill & Shaw 1977); development nonlinearity γ = 2–2.5 (RCA 1978).
+  Wall steepness increases with development time (US 4,930,116). Still
+  missing: constants at 457.9 nm (Jacobs 1978;
+  [source acquisition](source-acquisition.md)).

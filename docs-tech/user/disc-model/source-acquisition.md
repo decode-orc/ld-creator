@@ -1,214 +1,133 @@
 # Sources to acquire
 
-The documents the disc model still needs, most important first. Each entry
-names the stage and open item it resolves, and the plan task that is blocked
-until it is read. Sources already read are listed in
-[secondary-sources.md](secondary-sources.md). When a document here has been
-read, its findings go there and its entry is removed from this list.
+What the disc model still lacks, most important first. For each item: the
+best figure available now, what is still missing, and how to get it. The
+sources behind the figures are in
+[secondary-sources.md](secondary-sources.md), mostly under
+[Approximate figures](secondary-sources.md#approximate-figures-from-the-final-search).
+When an item is resolved, its entry is removed.
 
-## Priority 1: needed before Phase 5 (ideal disc)
+**Nothing here blocks Phase 5.** The two questions that affected the ideal
+disc are answered: the Gaussian pupil weighting applies once
+([S11](s11-optical-readout.md#open-items)), and the DdD taps the
+LD-V4300D before its RF EQ AMP ([S12](s12-player-front-end.md#sources)).
 
-These sources affect the ideal disc's RF. Without them, an inner-radius
-round-trip failure can't be attributed to ld-decode or to the model
-([metrics](../ntsc-round-trip-metrics.md#readout-mtf-and-decoder-settings)).
+Most remaining gaps are best closed by measurement: DdD captures (plan
+Task 10.2) for items 2, 7, 8 and 9, and a microscope image of a disc for
+items 5 and 6.
 
-### 1. Hopkins (1979): readout diffraction theory
+## Phase 5 (checks, not blocking)
 
-- **Citation:** H.H. Hopkins, "Diffraction theory of laser read-out systems
-  for optical video discs", *J. Opt. Soc. Am.* 69(1), 4–24 (1979).
-- **Link:** [doi:10.1364/JOSA.69.000004](https://doi.org/10.1364/JOSA.69.000004)
-  (Optica Publishing Group; paywalled).
-- **Resolves:**
-  - S11 open item: the Gaussian pupil weighting of the transfer function
-    (the 23 % rim intensity of IEC §11.1). Isailović §5.4.2 confirms the
-    pupil-overlap structure and the `2NA/λ` cut-off, but only for a uniform
-    pupil ([S11](s11-optical-readout.md#open-items)).
-  - Register row `S11.model`.
-  - Later: plan Task 10.1 (phase-pit model, the upper Figure 18 band) and
-    Task 8.4 (focus error).
-- **Why first:** S11's transfer function sets the inner-radius MTF that
-  ld-decode's compensation is tested against (+2.7 dB chroma at 55 mm
-  uncompensated).
+### 1. S11 transfer function
 
-### 2. Bouwhuis et al. (1985): *Principles of Optical Disc Systems*
+- **Now:** the integration matches the analytic uniform-pupil MTF (0.2507
+  at 802 /mm). Toshiba's Hi-Vision videodisc paper (1990) gives a roll-off
+  within about 1–2 dB of the model at the same normalised frequency.
+- **Missing:** a published value for a Gaussian-filled pupil that separates
+  "once" from "uniform" (0.213 vs 0.250).
+- **Get:** Hopkins, *JOSA* 69(1) 4–24 (1979),
+  [doi:10.1364/JOSA.69.000004](https://doi.org/10.1364/JOSA.69.000004)
+  (paywalled); or Bouwhuis et al. 1985
+  ([archive.org loan](https://archive.org/details/isbn_0852747853_v3i0));
+  or Task 10.2.
 
-- **Citation:** G. Bouwhuis, J. Braat, A. Huijser, J. Pasman, G. van
-  Rosmalen, K. Schouhamer Immink, *Principles of Optical Disc Systems*, Adam
-  Hilger, Bristol, 1985. ISBN 0-85274-785-3.
-- **Access:** [archive.org search](https://archive.org/search?query=principles+of+optical+disc+systems)
-  (controlled lending), interlibrary loan (for example
-  [TAMU catalogue](https://libcat.library.tamu.edu/Record/in00000384795)), or
-  secondhand.
-- **Chapters and what they resolve:**
-  - "Read-out of optical discs" (Braat): the S11 transfer function, as an
-    alternative to Hopkins (item 1). Phase 5.
-  - "Vector theory of diffraction": plan Task 10.1.
-  - "Mastering" (Pasman): S8 cutting spot `h`, thresholds E₁ and E₂, pit
-    length bias; S9 pit geometry and replication blur. Phase 8.
-- **Why second:** one book covers S11 now and S8/S9 later, so it's the best
-  single purchase. If item 1 isn't available, this chapter is the
-  alternative for S11.
+### 2. LD-V4300D pickup OEIC (PA0037) response
 
-### 3. LD-V4300D front end (reference player)
+- **Now:** −3 dB at roughly 15–25 MHz, inferred from pickup OEICs of the
+  period (Sharp, 1997: 18–21 MHz). It must pass at least about 14 MHz for the
+  player to work. Modelled as flat; a single pole at 15–20 MHz would droop a
+  few tenths of a dB at 8–9 MHz.
+- **Missing:** the actual response.
+- **Get:** measure it (Task 10.2: compare the captured carrier level against
+  the S11 prediction over radius). No datasheet has been found.
 
-The DomesdayDuplicator's reference player is the Pioneer LD-V4300D
-([DdD docs, LD-V4300D overview](https://github.com/simoninns/DomesdayDuplicator/blob/main/docs/content/ldv4300d/overview.md)).
-The service manual is **already available**:
+### 3. ADS825
 
-- **Service manual:** [Pioneer LD-V4300D Service Manual (domesday86.com)](https://www.domesday86.com/wp-content/uploads/2018/09/Pioneer-LD-V4300D-Service-Manual-DD86_2.pdf),
-  101 pages, scanned with OCR.
-- **RF tap:** [DdD docs, LD-V4300D RF output](https://github.com/simoninns/DomesdayDuplicator/blob/main/docs/content/ldv4300d/rf-output.md).
-  The tap is TP1 pin 1 ("RF") on the FTSB assembly, a 50 Ω test point.
-- **RF level:** service manual §10 "RF gain adjustment" (PDF p. 85) and the
-  [DdD calibration guide](https://github.com/simoninns/DomesdayDuplicator/blob/main/docs/content/ldv4300d/calibration.md):
-  VR1 on FTSB sets 300 mV p-p at TP1-1 (GGV1003/GGV1069, frame 15000).
+- **Resolved** from the datasheet; recorded in
+  [S13](s13-rf-capture.md#open-items). It gives no per-code transition data,
+  so S13's declared quantiser stands, with the datasheet's DNL and INL as
+  its error bounds.
 
-**What the service manual shows (read for this list).**
+## Phase 8 (deterministic disc impairments)
 
-- §9.2 FTS block diagram (PDF p. 93): the pickup's OEIC (photodiode with
-  integrated amplifier) "RF" output passes two transistor stages, with VR1
-  "RF GAIN", to the FTSB "RF" output, which is TP1-1.
-- §9.3 video block diagram (PDF p. 94): the RF then goes to the VDEM
-  assembly. There it passes an amplifier, an "RF COR" block, an audio FM
-  trap and a low-pass filter before the video demodulator (IC401 PA5013A).
-  The RF COR block is fed by an "RF FREQ" control line from the CONT
-  assembly.
-- §5.5 VDEM schematic (PDF p. 34): the RF enters at CN21, passes the
-  Q431–Q434 RF buffer and amplifier, then an LC network switched by Q401
-  ("RF FILTER SW") before buffer Q404.
+### 4. Resist exposure constants (S8)
 
-**Conclusion:** the DdD captures upstream of the player's RF correction and
-filtering. On the reference player, the captured RF is unequalised, and that
-is now sourced rather than inferred. This supports S12's default
-(`mtf_equaliser: none`).
+- **Now:** recorder line argon 457.9 nm (Sony US 4,152,726; Philips
+  LHH0400). AZ 1350J Dill constants at 436 nm (Kim 1984: A = 0.55 µm⁻¹,
+  B = 0.045 µm⁻¹, C = 0.013 cm²/mJ, with a development-rate fit) and at
+  404.7 nm (Dill & Shaw 1977). Development nonlinearity γ = 2–2.5 for
+  AZ1350B at 442 nm (RCA 1978).
+- **Missing:** constants at 457.9 nm.
+- **Get:** Jacobs, *Appl. Opt.* 17(13) 2001 (1978),
+  [doi:10.1364/AO.17.002001](https://doi.org/10.1364/AO.17.002001)
+  (paywalled). Otherwise use the 436 nm set and declare it.
 
-**Still open:**
+### 5. Pit width and wall angle (S9)
 
-- The frequency response of the OEIC and the FTSB RF output stage, up to the
-  optical cut-off. The manual gives the circuit but no response, and the
-  OEIC part has no datasheet located yet.
-- What RF COR does and how RF FREQ drives it (radius-dependent MTF
-  compensation, or a CAV/CLV switch). This is a decoder-side function and
-  isn't needed for the ideal disc. Record it when player profiles are
-  written (plan Task 9.3).
+- **Now:** depth 0.12 µm. Wall angle 45–50° from the normal (Philips design
+  value, acceptable range 30–65°; US 4,230,915). Width 0.4–0.6 µm,
+  decreasing with radius (the patent's example: 800 nm inner, 500 nm
+  outer). With 45° walls, the land-plane and half-depth widths differ by
+  0.12 µm, which may account for the 0.4 vs 0.6 µm disagreement.
+- **Missing:** a measurement of a pressed LaserVision disc.
+- **Get:** AFM or SEM of a disc. Otherwise Legierse & Pasman (1989,
+  [Springer](https://rd.springer.com/chapter/10.1007/978-1-4613-0843-0_11)).
 
-### 4. Bouwhuis & Braat (1978): player optics
+### 6. Replication fidelity (S9)
 
-- **Citation:** G. Bouwhuis, J. Braat, "Video disk player optics", *Applied
-  Optics* 17(13), 1993–2000 (1978).
-- **Link:** [doi:10.1364/AO.17.001993](https://doi.org/10.1364/AO.17.001993)
-  (paywalled).
-- **Resolves:** a cross-check of S11 (objective design, NA ≥ 0.4 for 12 MHz
-  bandwidth). Not needed if item 1 or 2 is read.
+- **Now:** moulding (NTSC) transfers 72–96 % of the stamper depth (CD data,
+  Hougum 1996), poorer at the outer radius. 2p (European discs) shrinks by
+  at most about 15 % by volume (PTR 1982), so at most about 6–18 nm of a
+  0.12 µm pit.
+- **Missing:** LaserVision measurements; any figure for electroforming.
+- **Get:** as item 5.
 
-### 5. ADS822/ADS825 datasheet
+## Phase 9 (noise, crosstalk, timing)
 
-- **Citation:** Texas Instruments, *ADS822/ADS825 10-Bit, 40MHz Sampling
-  Analog-to-Digital Converter*, SBAS069B.
-- **Link:** [ti.com/lit/gpn/ADS825](https://www.ti.com/lit/gpn/ADS825) (free).
-- **Resolves:** S13 open item: code transition points and full-scale
-  accuracy for the DdD capture profile (plan Task 5.3). The `ideal` capture
-  profile doesn't need it.
+### 7. Crosstalk
 
-## Priority 2: Phase 8 (deterministic disc impairments)
+- **Now:** about −40 to −50 dB relative to the on-track signal at 1.67 µm,
+  worsening by about 4 dB per 0.1 µm off-track (Kondo 1993; Toshiba 1990;
+  both scaled from other systems).
+- **Missing:** LaserVision values against off-track error, for CAV and CLV.
+- **Get:** Velzel, *Appl. Opt.* 17(13) 2029 (1978),
+  [doi:10.1364/AO.17.002029](https://doi.org/10.1364/AO.17.002029)
+  (paywalled); or measure it from captures.
 
-The four entries below are all from the July 1978 Philips special issue of
-*Applied Optics* 17(13), or from Philips authors. One library request can
-cover the Applied Optics papers (here and in Priority 3).
+### 8. Noise spectrum
 
-### 6. Jacobs (1978): laser beam recording
+- **Now:** carrier-to-noise 58–63 dB, taken as in 30 kHz (the IEC 60857
+  spectrum convention). Disc noise falls with frequency, following the
+  readout MTF (BBC, Isailović). Diode-laser RIN below −132 dB/Hz (Hitachi
+  1986), well under disc noise.
+- **Missing:** measured density against frequency and radius.
+- **Get:** Heemskerk, *Appl. Opt.* 17(13) 2007 (1978),
+  [doi:10.1364/AO.17.002007](https://doi.org/10.1364/AO.17.002007)
+  (paywalled); or measure it from a capture's noise floor at several radii.
 
-- **Citation:** B.A.J. Jacobs, "Laser beam recording of video master
-  disks", *Applied Optics* 17(13), 2001–2006 (1978).
-- **Link:** [doi:10.1364/AO.17.002001](https://doi.org/10.1364/AO.17.002001)
-  (paywalled).
-- **Resolves:** S8 values for the cutting spot `h`, thresholds E₁ and E₂,
-  and the pit length bias (register rows `S8.edge_profile`,
-  `S8.length_bias`; plan Task 8.2). The model form is already sourced from
-  Isailović App. 2.2.
+### 9. Timing error above 30 Hz (S10)
 
-### 7. Pasman, Olijhoek & Verkaik (1985): mastering
+- **Now:** uncorrected about 20 µs per revolution, falling about
+  −12 dB/oct above the rotation rate to about 1 kHz. The tangential servo
+  gives 70 dB at 30 Hz and about 1.6 kHz bandwidth (Isailović Fig. 3-47).
+  Residuals: about 1 µs after the mirror, 80 ns from sync and 5 ns from burst
+  after a TBC (Pioneer; Olympus). A 60 Hz line from the vertical interval.
+- **Missing:** magnitudes at harmonics of 30 Hz.
+- **Get:** measure them from captures (phase of the burst against line
+  number).
 
-- **Citation:** J.H.T. Pasman, J.F. Olijhoek, W. Verkaik, "Developments in
-  optical disk mastering", *Proc. SPIE* 529, 62 (1985).
-- **Link:** [doi:10.1117/12.946433](https://doi.org/10.1117/12.946433)
-  (paywalled).
-- **Resolves:** S8 and S9 as item 6 (Tasks 8.2, 8.3).
+## Other
 
-### 8. Legierse & Pasman (1989): mastering and replication materials
+### 10. PWM spectrum for a sinusoidal carrier (S6, audio)
 
-- **Citation:** P.E.J. Legierse, J.H.T. Pasman, "Materials for Mastering and
-  Replication Processes in Optical Video, Audio and Data Disc Production",
-  Plenum Press, New York, 1989.
-- **Link:** [Springer chapter](https://rd.springer.com/chapter/10.1007/978-1-4613-0843-0_11)
-  (paywalled).
-- **Resolves:** S9 pit width, wall slope and replication blur (register rows
-  `S9.copy`, `S9.pit_geometry`; plan Task 8.3). Isailović gives the
-  mechanisms but no magnitudes, and his widths conflict (0.4 µm and 0.8 µm).
+- **Now:** the triangle-carrier form (Sun 2012).
+- **Missing:** the LaserVision case, a limited sine whose zero crossings
+  the audio carriers shift. To be derived; no source needed.
 
-### 9. Put (1990): trends in mastering (substitute)
+### 11. DE0-Nano oscillator (S13)
 
-- **Citation:** Put, "Trends in Optical Disk Mastering", *MRS Bulletin*
-  (1990). Author's initials not yet confirmed.
-- **Link:** [Cambridge Core](https://www.cambridge.org/core/journals/mrs-bulletin/article/trends-in-optical-disk-mastering/82495129C6F2B64BF71000BF92BA01FA)
-  (paywalled).
-- **Resolves:** a possible substitute for items 7 and 8 if they can't be
-  obtained. Read only if needed; check the author's full name on the
-  publisher page.
-
-## Priority 3: Phase 9 and 10 (noise, crosstalk, readout refinement)
-
-### 10. Heemskerk (1978): noise
-
-- **Citation:** J.P.J. Heemskerk, "Noise in a video disk system:
-  experiments with an (AlGa)As laser", *Applied Optics* 17(13), 2007–2012
-  (1978).
-- **Link:** [doi:10.1364/AO.17.002007](https://doi.org/10.1364/AO.17.002007)
-  (paywalled).
-- **Resolves:** noise from source, medium and detector against light level
-  (plan Task 9.1). Isailović §6 already gives the shape (disc noise
-  dominant, Gaussian, white before the MTF).
-
-### 11. Velzel (1978): partially coherent readout
-
-- **Citation:** C.H.F. Velzel, "Laser beam reading of video records",
-  *Applied Optics* 17(13), 2029–2036 (1978).
-- **Link:** [doi:10.1364/AO.17.002029](https://doi.org/10.1364/AO.17.002029)
-  (paywalled).
-- **Resolves:** intermodulation and crosstalk (plan Task 9.2); phase-pit
-  readout (Task 10.1).
-
-### 12. Korpel (1978): simplified diffraction theory
-
-- **Citation:** A. Korpel, "Simplified diffraction theory of the video
-  disk", *Applied Optics* 17(13), 2037–2042 (1978).
-- **Link:** [doi:10.1364/AO.17.002037](https://doi.org/10.1364/AO.17.002037)
-  (paywalled).
-- **Resolves:** an independent cross-check of S11 and Task 10.1.
-
-### 13. DE0-Nano user manual
-
-- **Citation:** Terasic, *DE0-Nano User Manual*.
-- **Link:** [Terasic DE0-Nano page](https://www.terasic.com.tw/cgi-bin/page/archive.pl?No=593)
-  (free with registration).
-- **Resolves:** S13 open item: the oscillator frequency tolerance, for a
-  later clock-error impairment.
-
-## Priority 4: outside the video work
-
-### 14. Panter (1965): PWM spectrum
-
-- **Citation:** P.F. Panter, *Modulation, Noise, and Spectral Analysis*,
-  McGraw-Hill, 1965, p. 542.
-- **Access:** interlibrary loan or archive.org lending.
-- **Resolves:** S6 open item: symmetrical double-edge PWM, cited by IEC
-  60857 §7.2.1. Needed for audio and EFM, not for video.
-
-## Not needed
-
-- **Further player service manuals.** The reference player is the
-  LD-V4300D (item 3). Other players are needed only if plan Task 9.3 adds
-  their profiles.
-- **Olijhoek, Peek & Wesdorp, "Mastering technology for the Philips optical
-  disc systems", Electro '81.** Citation only; items 6–8 cover the same
-  ground.
+- **Now:** ±50 ppm, typical of 3.3 V 50 MHz SMD oscillators (range ±20 to
+  ±100 ppm). Terasic's schematic marks Y1 only "50MHZ". The DdD clock is
+  exactly 50 MHz × 8/5 ÷ 2, so the error passes straight to the sample rate.
+- **Missing:** the part.
+- **Get:** read the marking on a board, or measure CLOCK_50.

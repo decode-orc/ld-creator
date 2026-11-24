@@ -69,6 +69,10 @@ None: the stage is an identity in the video-only scope.
 
 ## Open items
 
-- Panter p. 542 has not been read (loan-only copy; see
-  [secondary sources](secondary-sources.md)). It is needed for the audio
-  work, not for video.
+- Panter p. 542 has not been read (loan-only copy). Its subject, the
+  spectrum of symmetrical double-edge PWM, is available from Sun (2012),
+  eqs (2.15) and (2.17)
+  ([secondary sources](secondary-sources.md#open-access-sources-from-the-wider-search)),
+  for a triangle carrier. LaserVision limits a sinusoidal carrier, so the
+  audio work must derive the corresponding spectrum. Needed for audio, not
+  for video.

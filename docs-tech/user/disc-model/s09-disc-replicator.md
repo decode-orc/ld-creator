@@ -100,18 +100,34 @@ None at the ideal setting.
   sourced (Isailović §6.2.5): the reflective layer blurs pit edges like a
   low-pass filter, unequal blurring of the two edges gives jitter, and the
   moulded bump varies "from almost Gaussian to T shapes". No magnitudes are
-  given. Candidates for values: Bouwhuis et al. 1985, Mastering chapter;
-  Legierse & Pasman 1989.
+  given. Approximate values ([approximate figures](secondary-sources.md#approximate-figures-from-the-final-search)): moulding
+  transfers 72–96 % of stamper depth (CD, Hougum 1996), poorer at the outer
+  radius; 2p lacquer shrinks at most about 15 % by volume (PTR 40, 1982), so
+  at most about 6–18 nm of a 0.12 µm pit. Electroforming: no figure.
 - Pit width and wall slope for the pressed LaserVision disc. Depth: the
   readout optimum is `λ/(4n)` = 103.7 nm at the Figure 1a design point
   (Isailović §2.3.1.3; register row `S9.pit_depth_optimum`), and the master
-  resist is 1100–1500 Å thick. The book's widths disagree (0.4 µm effective
-  in §1.4 and §2.3.1.2, 0.8 µm for the VLP prototype in PTR), so no width is
-  adopted.
+  resist is 1100–1500 Å thick. Production figures
+  ([secondary sources](secondary-sources.md#open-access-sources-from-the-wider-search)):
+  0.12 µm deep in PTR 39 (1980) and PTR 40 (1982); widths 0.6 µm (PTR 39;
+  DiscoVision stamper bumps, US 4,500,392) and 0.4 µm (PTR 40 and 42, with
+  an SEM of a production disc). The VLP prototype was 0.8 µm wide (PTR 33).
+  The widths still conflict, so no width is adopted. Philips's design
+  values (US 4,230,915): wall angle 45–50° from the normal (acceptable
+  30–65°), and width decreasing with radius (example 800 nm inner, 500 nm
+  outer). With 45° walls the land-plane and half-depth widths differ by
+  0.12 µm, which may explain the conflict ([approximate figures](secondary-sources.md#approximate-figures-from-the-final-search)).
+  No measurement of a LaserVision pit wall has been found.
+- Replication process. Philips's European discs were made by the 2p
+  photopolymerisation process (PTR 40, 1982); DiscoVision's by moulding
+  from nickel stampers (US 4,500,392). The model does not yet distinguish
+  them.
 - Dropout statistics. Isailović §6.2.2, §6.5.2 and §6.6 give their shape:
   lengths of one to two pits from mastering and up to about six from plastic
   inclusions; count against duration fitted by `a·e^(−bx)`, `a/x²` or
   `a·e^(−b√x)`; rate ∝ radius in CAV for a uniform defect density. They give
   no rate that applies to a typical disc ("several orders" of variation), so
   the rate is a project choice when dropouts are added. §12.2.1 bounds the
-  length at 100 µs.
+  length at 100 µs. A reference point for that choice: about 15 dropouts per
+  frame as a background rate and about 50 per frame as "borderline" for a
+  repaired poor stamper (US 4,500,392).
