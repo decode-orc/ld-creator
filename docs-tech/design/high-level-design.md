@@ -113,7 +113,7 @@ All inputs follow the CVBS file format specification
   already produces the channel-bit-level t-values.
 - Audio channel pair 1 maps to analogue channels I (left) and II (right).
 
-### 2.3 Outputs — *designed (formats implemented, not yet written by a run)*
+### 2.3 Outputs — *implemented for the carrier diagnostic; designed for a disc*
 
 | Output | Description |
 |--------|-------------|
@@ -126,8 +126,20 @@ All inputs follow the CVBS file format specification
 The `.s16` word mapping (`src/rf_sample_writer/`, S14), the resolved-project
 text (`src/project/resolved_project.cpp`) and the tap formats
 (`src/diagnostics/tap_writer.cpp`, documented in
-`docs/reference/diagnostic-taps.md`) are implemented and unit tested. A run
-writes none of them until the pipeline is wired (plan Task 5.4).
+`docs/reference/diagnostic-taps.md`) are implemented. A run with
+`output.mode: carrier_diagnostic` writes all three
+(`src/pipeline/carrier_diagnostic_run.cpp`): S1–S5, then `cos φ` rendered at
+40 MHz through the S13 quantiser and S14 (plan Task 3.5). Its resolved project
+is marked as not a disc. A disc run (`output.mode: disc`) is wired in plan
+Task 5.4.
+
+**Host independence.** The same project and media are to give the same bytes
+on every host. Two rules serve this in the model's code: `ld_creator_core`
+is compiled with `-ffp-contract=off`, so no compiler fuses a multiply and an
+add into one rounding; and every sine and cosine that reaches the RF comes
+from `src/dsp/portable_math.cpp`, built from + − × ÷ and rounding only,
+not from the C library, whose last bit differs between implementations.
+`std::sqrt` is correctly rounded by IEEE 754 and is used directly.
 
 ### 2.4 Command line — *implemented*
 
@@ -137,12 +149,12 @@ writes none of them until the pipeline is wired (plan Task 5.4).
 the output. User reference: `docs/reference/cli-options.md`.
 
 A run loads and checks the project and its input; with `--validate` it then
-exits successfully. Without it, it reports that RF modulation is not
-implemented and exits with a failure status.
+exits successfully. Without it, a carrier-diagnostic project is run; a disc
+project is reported as not yet runnable, with a failure status.
 
 ---
 
-## 3. Signal model — *designed*
+## 3. Signal model — *S1–S5 implemented; S6–S13 designed*
 
 ### 3.1 Pipeline
 
@@ -155,10 +167,10 @@ parameter.
 | # | Stage (module) | Physical process | Status |
 |---|----------------|------------------|--------|
 | S1 | `cvbs_input` | Programme source: CVBS to IRE at 4fsc | implemented |
-| S2 | `video_rate_converter` | Resampling to the modelling rate | designed |
-| S3 | `group_delay_predistorter` | §9.1.7 group-delay pre-distortion | designed |
-| S4 | `video_pre_emphasis` | §9.2.4 pre-emphasis | designed |
-| S5 | `fm_phase_modulator` | §9.2 FM: carrier phase | designed |
+| S2 | `video_rate_converter` | Resampling to the modelling rate Fm = 24 fsc ≈ 85.909 MHz | implemented |
+| S3 | `group_delay_predistorter` | §9.1.7 group-delay pre-distortion | implemented |
+| S4 | `video_pre_emphasis` | §9.2.4 pre-emphasis | implemented |
+| S5 | `fm_phase_modulator` | §9.2 FM: carrier phase | implemented |
 | S6 | `recording_signal_combiner` | §7.2.1 / Amd 2 §13.1.5 PWM of audio and EFM (video only: pass-through) | designed |
 | S7 | `recording_limiter` | Binary cut: pit-edge times | designed |
 | S8 | `disc_cutter` | Laser beam recorder: time → track position (§4.7, §4.15) | designed |
@@ -166,8 +178,8 @@ parameter.
 | S10 | `playback_mechanics` | Spindle and tracking: playback time → track position | designed |
 | S11 | `optical_readout` | §11.1 reference optics: pits → photocurrent | designed (transfer function H implemented, used for the `hfmi` default) |
 | S12 | `player_front_end` | Photodiode, preamplifier (§11.2); diagnostic MTF equaliser | designed |
-| S13 | `rf_capture` | Capture device (DomesdayDuplicator by default) | designed |
-| S14 | `rf_sample_writer` | `.s16` and resolved project | implemented (writer; not yet wired) |
+| S13 | `rf_capture` | Capture device (DomesdayDuplicator by default) | designed (quantisers implemented) |
+| S14 | `rf_sample_writer` | `.s16` and resolved project | implemented |
 
 Each stage has an `I`-prefixed streaming interface
 (`include/ld_creator/pipeline/stage_interfaces.h`) over the typed D1–D10
@@ -196,7 +208,22 @@ S1 → S5. Parameters per standard:
 | Group-delay pre-distortion | §9.1.6, Figure 11 (0.5–4.8 MHz) | §9.1.7, Figure 8 (0.5–4.2 MHz) |
 | Pilot burst | 3.75 MHz (240 fH) on sync level (§9.1.2) — present in the CVBS from videosynth | — |
 
-The NTSC values and their derivations are in the S3–S5 notes.
+The NTSC values and their derivations are in the S3–S5 notes. Their
+discrete realisations, at the modelling rate Fm = 24 fsc, are chosen in the
+S2–S5 notes:
+
+- S2: Kaiser-windowed sinc interpolator, 40 taps per output sample.
+- S3: a 48-tap least-squares FIR at 4fsc spacing, fitted when the stage is
+  built to a monotone cubic through the `delay_ns` table; its bulk delay is
+  removed exactly.
+- S4: the bilinear transform, with DC gain exactly 1.
+- S5: a 6-point integration rule and a phase accumulated in whole cycles
+  plus a fraction. D3 carries φ and f, which define a cubic Hermite
+  interpolant of φ between samples; its error is what sets Fm (S2 note).
+
+The carrier diagnostic (`src/carrier_diagnostic/`) renders `cos φ` at the
+capture rate from that interpolant, quantised by S13's rule. It is not a
+disc, and exists to place a fault before or after S7.
 
 ### 3.3 Analogue audio path
 
@@ -251,11 +278,12 @@ Implemented modules are marked ✔; the rest are planned.
 | ✔ cvbs_input | `src/cvbs_input/` | S1: read `.cvbs` and `.meta`, convert to IRE |
 | audio_input | `src/audio_input/` | Read WAV channel pairs |
 | efm_input | `src/efm_input/` | Read `.efm` t-values and `.efm.meta` frame index |
-| dsp | `src/dsp/` | Shared filters and resamplers |
-| video_rate_converter | `src/video_rate_converter/` | S2 |
-| group_delay_predistorter | `src/group_delay_predistorter/` | S3 |
-| video_pre_emphasis | `src/video_pre_emphasis/` | S4 |
-| fm_phase_modulator | `src/fm_phase_modulator/` | S5 |
+| ✔ dsp | `src/dsp/` | Host-independent sine and cosine, Kaiser window, Cholesky solver, monotone cubic, FIR response, Hermite phase interpolation |
+| ✔ video_rate_converter | `src/video_rate_converter/` | S2 |
+| ✔ group_delay_predistorter | `src/group_delay_predistorter/` | S3 |
+| ✔ video_pre_emphasis | `src/video_pre_emphasis/` | S4 |
+| ✔ fm_phase_modulator | `src/fm_phase_modulator/` | S5 |
+| ✔ carrier_diagnostic | `src/carrier_diagnostic/` | `output.mode: carrier_diagnostic`: `cos φ` at 40 MHz |
 | recording_signal_combiner | `src/recording_signal_combiner/` | S6 (audio and EFM sources later) |
 | recording_limiter | `src/recording_limiter/` | S7 |
 | disc_cutter | `src/disc_cutter/` | S8 |
@@ -263,10 +291,10 @@ Implemented modules are marked ✔; the rest are planned.
 | playback_mechanics | `src/playback_mechanics/` | S10 |
 | optical_readout | `src/optical_readout/` | S11 (✔ readout transfer function) |
 | player_front_end | `src/player_front_end/` | S12 |
-| rf_capture | `src/rf_capture/` | S13 |
+| rf_capture | `src/rf_capture/` | S13 (✔ quantisers) |
 | ✔ rf_sample_writer | `src/rf_sample_writer/` | S14 |
 | ✔ diagnostics | `src/diagnostics/` | Byte sinks and diagnostic tap writers |
-| ✔ pipeline | `src/pipeline/`, `include/ld_creator/pipeline/` | D1–D10 types, stage interfaces, block chain and threading (✔); run setup against the input (✔); end-to-end wiring (planned) |
+| ✔ pipeline | `src/pipeline/`, `include/ld_creator/pipeline/` | D1–D10 types, stage interfaces, block chain and threading (✔); run setup against the input (✔); the carrier-diagnostic run with taps and resolved project (✔); the disc run (planned) |
 
 All modules are built into the `ld_creator_core` library; `src/main.cpp` is
 the only source outside it. Modules depend on interfaces (`I`-prefixed) and
@@ -292,6 +320,12 @@ differ in one stage block.
 ## 6. Open questions
 
 - PAL analogue/digital audio coexistence on the low band (§3.4).
+- `src/optical_readout/readout_transfer.cpp` (S11) still uses the C
+  library's `erf`, `exp`, `sin` and `cos`. Its result, the default `hfmi`,
+  is written to the resolved project and checked against the computed
+  maximum, so a last-bit difference between hosts could make one host's
+  resolved project fail validation on another. Planned: move it to
+  host-independent functions when S11 is implemented (plan Task 5.2).
 - Whether ld-creator should accept videosynth's `RAW_S16_*` high-rate presets
   directly, avoiding a 4fsc → modelling-rate resample.
 - The linear readout model reaches only the lower part of the IEC 60857

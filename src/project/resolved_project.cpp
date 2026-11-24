@@ -81,6 +81,12 @@ std::string EmitResolvedProject(const ProjectConfig& config,
       "# Resolved ld-creator project: every key with its effective value. "
       "Running it");
   yaml.Line("# reproduces the RF byte for byte.");
+  if (config.output.mode == OutputMode::kCarrierDiagnostic) {
+    yaml.Line(
+        "# NOT A DISC: output.mode is carrier_diagnostic, so the RF is "
+        "cos(phi)");
+    yaml.Line("# rendered directly from the FM modulator, skipping S6-S12.");
+  }
   yaml.Line("");
 
   yaml.Block("project");

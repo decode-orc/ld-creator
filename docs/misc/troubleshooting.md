@@ -16,9 +16,21 @@ ld-creator rejects options it does not recognise. Run `ld-creator --help` for th
 
 Every run needs a project file: `ld-creator --project disc.yaml`. Only `--help` and `--version` work without one.
 
-## "RF modulation is not implemented yet"
+## "Disc modulation is not implemented yet; only output.mode = carrier_diagnostic can be run"
 
-Expected at this stage of development. ld-creator checks the project and its input, then stops. Use `--validate` to run the checks and exit successfully.
+Expected at this stage of development. A disc project (`output.mode: disc`, the default) is checked and then stops, writing nothing. Use `--validate` to run the checks and exit successfully, or set `output.mode: carrier_diagnostic` to write the FM carrier as a [carrier diagnostic](../user-manual/carrier-diagnostic.md).
+
+## "output.mode = carrier_diagnostic: the RF is NOT A DISC"
+
+A warning, logged at the start of every carrier-diagnostic run as a reminder that the file is the bare FM carrier, without any disc stage.
+
+## "N RF samples clipped at the converter's range"
+
+A warning: N samples fell outside the converter's range and were clamped to its end codes. In a carrier-diagnostic run this happens only with `rf_capture.level_fraction` at or very near 1.0, where the carrier's peaks reach full scale; lower it to leave headroom.
+
+## "Run failed: …"
+
+The run stopped part-way: an input file could not be read, or an output file (the RF, a tap or the resolved project) could not be written. The message names the file. Check that the directories exist and are writable and that there is space. The files already written are incomplete and should be discarded.
 
 ## Project errors
 
@@ -79,6 +91,10 @@ The readout model reaches its largest HFMI at full pit contrast. The message giv
 ### `optical_readout.hfmi = … is outside the IEC 60857 Figure 18 band`
 
 The value is outside the Figure 18 band at the configured track pitch. Figure 18 defines the band only for pitches 1.4–2.0 µm.
+
+### `diagnostics.taps[…].stage = '…' does not run with output.mode = carrier_diagnostic`
+
+A carrier-diagnostic run stops after `fm_phase_modulator`, so later stages produce nothing to tap. Tap `cvbs_input`, `video_rate_converter`, `group_delay_predistorter`, `video_pre_emphasis` or `fm_phase_modulator`, or remove the tap.
 
 ### `… uses an unknown path root`
 

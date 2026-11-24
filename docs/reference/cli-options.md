@@ -20,4 +20,4 @@ No option changes the RF: everything that does is in the project file.
 Logging goes to standard error. A missing `--project`, an unrecognised option, a missing option value, an unknown log level or an invalid thread count is an error: ld-creator prints the problem and the usage text and exits with a non-zero status.
 
 !!! warning "Partly implemented"
-    RF modulation is not implemented yet. Without `--validate`, ld-creator checks the project and its input, then reports that modulation is not implemented and exits with a non-zero status.
+    Without `--validate`, ld-creator checks the project and its input and then runs it. Only projects with `output.mode: carrier_diagnostic` can be run; for a disc project ld-creator reports that disc modulation is not implemented and exits with a non-zero status.

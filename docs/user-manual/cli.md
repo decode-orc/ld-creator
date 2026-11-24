@@ -32,12 +32,18 @@ Project validation error: video_pre_emphasis.t1_ns = 340 is outside the IEC 6085
 
 On success ld-creator logs the input, the disc's radius range and the output path, and exits with status 0.
 
-!!! warning "Planned"
-    RF modulation is not implemented yet. A run without `--validate` performs the same checks and then exits with a non-zero status.
+## Running a project
+
+Without `--validate`, ld-creator runs the project after the same checks. It writes the RF to `output.rf_path`, every declared diagnostic tap, and the [resolved project](../reference/project-file.md#the-resolved-project) beside the RF, then logs the number of samples written.
+
+!!! warning "Partly implemented"
+    Only [carrier-diagnostic](carrier-diagnostic.md) projects (`output.mode: carrier_diagnostic`) can be run. A disc project passes the checks and then exits with a non-zero status, writing nothing.
+
+`--threads` sets how many threads the stages share; the RF is byte-identical for any value.
 
 ## Exit status
 
 | Status | Meaning |
 |--------|---------|
-| `0` | `--help` or `--version` completed, or `--validate` found no errors |
-| non-zero | Invalid arguments, a log file could not be opened, a project or input error, or (currently) a modulation run was requested |
+| `0` | `--help` or `--version` completed, `--validate` found no errors, or a run completed |
+| non-zero | Invalid arguments, a log file could not be opened, a project or input error, a read or write failure during the run, or (currently) a disc run was requested |

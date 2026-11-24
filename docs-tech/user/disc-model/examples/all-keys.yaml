@@ -35,7 +35,7 @@ optical_readout:
   rim_intensity: 0.23
   # The default: the largest HFMI with pit contrast m = 1 at these optics,
   # (4/pi) * H(802 pits/mm), as the resolved project writes it.
-  hfmi: 0.27141590456593495
+  hfmi: 0.2714159045659349
 
 player_front_end:
   profile: iec_reference

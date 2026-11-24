@@ -56,10 +56,12 @@ round-trip level threshold ([metrics](../ntsc-round-trip-metrics.md)), gives
 The budget for S2 + S5 + S7 together is therefore **4 ps** per edge. A
 demodulator averages over several half-cycles, so this bound is conservative.
 
-**Root finding.** Within each `Fm` interval, φ is represented by a
-band-limited interpolant (S2/S5). Each crossing is found by bracketing the
-target phase between samples and solving on the interpolant. The method and
-its error are chosen in plan Task 4.2 against the 4 ps budget.
+**Root finding.** Within each `Fm` interval, φ is the cubic Hermite
+interpolant on φ and 2πf ([S5](s05-fm-phase-modulator.md)). Fm was chosen
+so that this interpolant's error is at most 1.45 ps of edge time, 36 % of
+the budget ([S2](s02-video-rate-converter.md)). Each crossing is found by
+bracketing the target phase between samples and solving on the
+interpolant. The solver and its error are chosen in plan Task 4.2.
 
 ## Parameters
 

@@ -85,9 +85,24 @@ linear-phase anti-alias low-pass at Fr and a 16-bit quantiser:
   maximum carrier excursion (S4);
 - stopband from 20 MHz at least 98 dB down, below 16-bit quantisation, so
   aliasing is below the quantisation floor;
-- the same level reference.
+- the same level reference;
+- quantisation (declared) `Q(u) = clamp(round(32768·u), −32768, 32767)`,
+  the 16-bit counterpart of the DdD rule, ±0.5 LSB.
 
 The filter design itself is chosen in plan Task 5.3 against these numbers.
+
+`round` is to the nearest integer, halves away from zero, in both profiles.
+Both quantisers are implemented (`src/rf_capture/capture_quantiser.cpp`);
+the anti-alias filters and the level reference are plan Task 5.3.
+
+### Carrier diagnostic
+
+`output.mode: carrier_diagnostic` (plan Task 3.5) bypasses S6–S12 and this
+stage's filter, but uses its sampling grid and quantiser. Capture sample n,
+at τ = n / 40 MHz, falls at n·189/88 Fm samples, and u = level_fraction ·
+cos φ(τ). The carrier has a constant amplitude, so its peak-to-peak is
+exactly level_fraction of full scale, which is the level rule above applied to
+it. It is not a disc.
 
 ## Parameters
 
@@ -96,6 +111,7 @@ The filter design itself is chosen in plan Task 5.3 against these numbers.
 | `S13.profile` | `domesday_duplicator` |
 | `S13.sample_rate` | 40 MHz (fixed) |
 | `S13.adc_bits` | 10 (DdD), 16 (`ideal`) |
+| `S13.quantiser`, `S13.ideal_quantiser` | The two Q rules above |
 | `S13.adc_full_scale` | 2 V p-p |
 | `S13.level_fraction` | 0.75 |
 | `S13.filter_components` | schematic values above |

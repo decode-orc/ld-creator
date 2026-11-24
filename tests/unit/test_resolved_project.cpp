@@ -73,7 +73,7 @@ TEST(ResolvedProjectTest, RoundTripsEveryNonDefaultValueExactly) {
       "diagnostics:\n  taps:\n"
       "    - {stage: cvbs_input, path: /m/t1, first_frame: 1, frame_count: "
       "2}\n"
-      "    - {stage: rf_capture, path: /m/t2}\n";
+      "    - {stage: fm_phase_modulator, path: /m/t2}\n";
   const ProjectConfig original = Load(text);
   const std::string emitted = EmitResolvedProject(original, 9, Record());
   const ProjectConfig reloaded = Load(emitted);

@@ -13,8 +13,13 @@
 
 namespace ld_creator::ntsc {
 
-// SMPTE 170M-2004: line frequency fH = 4.5 MHz / 286 (register S1.fh).
-inline constexpr double kLineFrequencyHz = 4.5e6 / 286.0;
+// SMPTE 170M-2004: line frequency fH = 4.5 MHz / 286 (register S1.fh), as
+// an exact ratio of integers and as a double.
+inline constexpr std::int64_t kLineFrequencyNumeratorHz = 4'500'000;
+inline constexpr std::int64_t kLineFrequencyDenominator = 286;
+inline constexpr double kLineFrequencyHz =
+    static_cast<double>(kLineFrequencyNumeratorHz) /
+    static_cast<double>(kLineFrequencyDenominator);
 
 // SMPTE 170M-2004: colour subcarrier fsc = 455/2 · fH (register S1.fsc).
 inline constexpr double kSubcarrierFrequencyHz = 455.0 / 2.0 * kLineFrequencyHz;

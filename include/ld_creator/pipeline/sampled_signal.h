@@ -39,12 +39,17 @@ struct IreSampleBlock {
   std::vector<double> ire;
 };
 
-// D3 (S5–S6): carrier phase φ in radians and the slice level s
-// (dimensionless, s ≡ 0 for video only), both at the modelling rate Fm with
-// origin 0. `phase_rad` and `slice_level` always have the same length.
+// D3 (S5–S6): carrier phase φ in radians, its instantaneous frequency
+// f = φ'/2π in Hz, and the slice level s (dimensionless, s ≡ 0 for video
+// only), all at the modelling rate Fm with origin 0. The three vectors
+// always have the same length. φ and f at each sample define the cubic
+// Hermite interpolant of φ between samples (S5 note). A run of M D2 samples
+// gives M + 1 D3 samples: the last is at the end of the run, so the
+// interpolant covers the whole run.
 struct CarrierPhaseBlock {
   std::int64_t first_sample = 0;
   std::vector<double> phase_rad;
+  std::vector<double> frequency_hz;
   std::vector<double> slice_level;
 };
 

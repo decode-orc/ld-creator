@@ -1,19 +1,34 @@
 # RF Output
 
-!!! warning "Planned"
-    ld-creator does not write RF yet. This page describes the intended output.
+!!! warning "Partly implemented"
+    ld-creator writes RF for [carrier-diagnostic](../user-manual/carrier-diagnostic.md) runs only. RF from a modelled disc (`output.mode: disc`) is not implemented yet.
 
 ## File formats
 
-ld-creator writes formats that ld-decode reads directly:
+ld-creator writes a format that ld-decode reads directly:
 
-| Extension | Format | Notes |
-|-----------|--------|-------|
-| `.s16` | Signed 16-bit little-endian samples, mono | First format to be implemented |
-| `.lds` | 10-bit packed samples | Capture format used by the Domesday Duplicator |
-| `.ldf` | FLAC-compressed `.lds` | Much smaller; ld-decode decompresses on the fly |
+| Extension | Format | Status |
+|-----------|--------|--------|
+| `.s16` | Signed 16-bit little-endian samples, mono, no header | Written |
+| `.lds` | 10-bit packed samples, the Domesday Duplicator's capture format | Planned |
+| `.ldf` | FLAC-compressed `.lds` | Planned |
 
-The default sample rate is **40 MHz**, which is what ld-decode expects unless told otherwise with `--inputfreq`.
+The sample rate is **40 MHz**, which is what ld-decode expects unless told otherwise with `--inputfreq`. Sample *n* is at *n* / 40 MHz from 0H of line 1 of the first frame read, and the file holds every sample before the end of the last frame: ⌈*F* × 4 004 000 / 3⌉ samples for *F* frames (1 334 667 for one frame).
+
+### Sample words
+
+The [`rf_capture.profile`](project-file.md#rf_capture) sets what a word holds:
+
+| Profile | Converter code | Stored word |
+|---------|----------------|-------------|
+| `domesday_duplicator` | 10-bit, 0–1023, mid-scale 512 | (code − 512) × 64, as an uncompressed Domesday Duplicator capture (`.ddd.s16`) |
+| `ideal` | signed 16-bit | the code itself |
+
+The converter input *u* runs from −1 to +1 across its range and is quantised to round(512 + 512·*u*) or round(32768·*u*), clamped to the range. Clamped samples are counted, and the run warns if there are any.
+
+## Carrier-diagnostic RF
+
+With `output.mode: carrier_diagnostic`, *u* = `level_fraction` × cos φ(*t*), where φ is the FM modulator's carrier phase. The carrier's peak-to-peak amplitude is therefore `level_fraction` of full scale (75 % by default: codes 128–896 with the Domesday Duplicator profile). No disc stage is applied: there is no readout loss, noise or capture filter. The file is **not a disc**.
 
 ## Modulation parameters
 

@@ -1,7 +1,7 @@
 # Quick Start
 
 !!! warning "Planned"
-    RF modulation is not yet implemented, so there is no end-to-end walkthrough yet. This page will take you from a videosynth project to an ld-decode result once the pipeline is available.
+    Disc modulation is not yet implemented, so there is no end-to-end walkthrough yet. This page will take you from a videosynth project to an ld-decode result once the pipeline is available.
 
 ## What works today
 
@@ -27,7 +27,9 @@ output:
   rf_path: "{output}/ntsc_cav.s16"
 ```
 
-`--validate` reports every problem with the project or its input and exits with status 0 if there are none. Running without `--validate` performs the same checks, then logs that modulation is not implemented and exits with a non-zero status.
+`--validate` reports every problem with the project or its input and exits with status 0 if there are none. Running without `--validate` performs the same checks; a disc project then stops, because disc modulation is not implemented yet.
+
+To write RF today, add `mode: carrier_diagnostic` to the `output` block and run the project without `--validate`. ld-creator writes the FM-modulated video carrier to `rf_path`, with a resolved project beside it. That file is a fault-finding aid, not a disc; see [Carrier diagnostic](../user-manual/carrier-diagnostic.md).
 
 ## What the walkthrough will cover
 

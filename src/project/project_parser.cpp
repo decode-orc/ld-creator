@@ -11,7 +11,9 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include <algorithm>
 #include <charconv>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <set>
@@ -49,6 +51,14 @@ const std::vector<std::string>& TapStageNames() {
       "disc_cutter",        "optical_readout",      "player_front_end",
       "rf_capture"};
   return names;
+}
+
+bool IsCarrierDiagnosticTapStage(const std::string& stage) {
+  // The first five tap stages, S1–S5, in TapStageNames() order.
+  constexpr std::size_t kCarrierDiagnosticStages = 5;
+  const std::vector<std::string>& names = TapStageNames();
+  return std::find(names.begin(), names.begin() + kCarrierDiagnosticStages,
+                   stage) != names.begin() + kCarrierDiagnosticStages;
 }
 
 namespace {

@@ -23,9 +23,10 @@ whose every sample is known; ld-creator turns it into RF;
 difference between what went in and what came out is a measured error in the
 decode chain.
 
-> **Status:** the repository is scaffolded for development. The command-line
-> entry point, build, tests and documentation pipeline are in place; RF
-> modulation is not yet implemented.
+> **Status:** in development. ld-creator loads and checks NTSC projects and
+> runs the video signal stages (S1–S5) to the FM carrier, which it can write
+> as a carrier-diagnostic RF file. RF from a modelled disc is not yet
+> implemented.
 
 ---
 

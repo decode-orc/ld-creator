@@ -3,7 +3,7 @@
 An ld-creator run is described by a YAML **project file**: the input, every stage parameter and the output. Nothing that affects the RF comes from the command line or the environment, so the project file and the media it names determine the RF.
 
 !!! warning "Partly implemented"
-    ld-creator reads and checks project files, and checks them against their input (`--validate`). RF modulation is not implemented yet: a run without `--validate` stops after the checks. The keys of later stages are accepted and checked now so that projects written today stay valid.
+    ld-creator reads and checks project files, and checks them against their input (`--validate`). It runs projects with [`output.mode: carrier_diagnostic`](#output). Disc modulation (`output.mode: disc`, the default) is not implemented yet: such a run stops after the checks. The keys of later stages are accepted and checked now so that projects written today stay valid.
 
 ```yaml
 project:
@@ -93,7 +93,7 @@ The recording must be NTSC composite video at 4fsc; see [Input files](input-file
 | `enabled` | bool | `true` | — | `false` is outside tolerance: IEC 60857 §9.1.7 says the pre-distortion "shall" be applied |
 | `delay_ns` | list of `[f_mhz, ns]` | `[[0.5, 0], [2.0, -15], [3.0, -45], [3.58, -80], [4.0, -135], [4.2, -200]]` | at least two points, the first `[0.5, 0]`, frequencies ascending within 0.5–4.2 MHz | IEC 60857 §9.1.7, Figure 8: the six table frequencies, with delays within ±15 ns at 2, 3 and 3.58 MHz, ±30 ns at 4 MHz and ±50 ns at 4.2 MHz |
 
-Delays are relative to 0.5 MHz.
+Delays are relative to 0.5 MHz. Between the table points the delay follows a smooth curve through them, which stays within the Figure 8 band; below 0.5 MHz it is 0, and above the last point it holds the last delay. The filter is designed from this table each time the stage is built.
 
 ## `video_pre_emphasis`
 
@@ -161,7 +161,9 @@ The readout model gives HFMI = m·(4/π)·H(802 pits/mm), where H is the optics'
 | `rf_path` | string | Yes | — | A path ending in `.s16` |
 | `mode` | string | No | `disc` | `disc`, `carrier_diagnostic` |
 
-`carrier_diagnostic` writes the FM carrier directly, with no disc stages. It is **not a disc**, and the resolved project records the mode so the file cannot be mistaken for one.
+`carrier_diagnostic` writes the FM carrier directly, with no disc stages: the stages up to `fm_phase_modulator` run, and the carrier `cos φ` is sampled at 40 MHz and quantised by the `rf_capture` profile at `level_fraction` of full scale. It is **not a disc**; the resolved project records the mode and says so in its header, so the file cannot be mistaken for one. See [Carrier diagnostic](../user-manual/carrier-diagnostic.md).
+
+`disc` is not implemented yet.
 
 ## `diagnostics`
 
@@ -184,6 +186,8 @@ diagnostics:
 
 Taps never change the RF. Their file formats are in [Diagnostic taps](diagnostic-taps.md).
 
+With `output.mode: carrier_diagnostic`, only the stages that run can be tapped: `cvbs_input`, `video_rate_converter`, `group_delay_predistorter`, `video_pre_emphasis` and `fm_phase_modulator`. A tap on a later stage is an error.
+
 ## `allow_out_of_tolerance`
 
 ```yaml
@@ -200,10 +204,7 @@ Listing any other path, or a path twice, is an error. Listing a key whose value 
 
 ## The resolved project
 
-!!! warning "Planned"
-    The resolved project is written once RF output is implemented. Its format, below, is implemented and tested.
-
-Each run will write `<rf_path>` with `.s16` replaced by `.resolved.yaml`. It is a valid project file that:
+Each run writes `<rf_path>` with `.s16` replaced by `.resolved.yaml` (today, carrier-diagnostic runs only). It is a valid project file that:
 
 - contains every block and key, with its effective value, in the order of this page;
 - gives every path as an absolute path, `input.frame_count` as the number of frames read, and `optical_readout.hfmi` as its computed value;
@@ -217,7 +218,7 @@ Each run will write `<rf_path>` with `.s16` replaced by `.resolved.yaml`. It is 
 | `resolved.meta_sha256` | SHA-256 of the `.meta` |
 | `resolved.rf_sha256` | SHA-256 of the RF file |
 
-Loading a project with a `resolved:` block checks it: if the `.cvbs` or `.meta` no longer matches its hash, that is an error naming the file; a different `ld_creator_version` is a warning, because the RF may differ. Loading a resolved project and resolving it again gives the same bytes.
+Loading a project with a `resolved:` block checks it: if the `.cvbs` or `.meta` no longer matches its hash, that is an error naming the file; a different `ld_creator_version` is a warning, because the RF may differ. Running a resolved project writes the same RF, and the same resolved project, byte for byte.
 
 ## What is not in the project
 

@@ -47,12 +47,48 @@ S5 outputs φ, not cos φ. Every later stage needs the times at which φ
 crosses given values (S7), and these are found far more accurately from φ
 than from a sampled cosine.
 
-The integration rule is chosen in plan Task 3.4. The requirement comes from
-the S7 edge-time budget: the phase error must stay below `2π · f · 4 ps`,
-which is 3 × 10⁻⁴ rad at 12.2 MHz, over a whole run. The phase is accumulated
-in `double`, and over a full side (3600 s, φ ≈ 2 × 10¹¹ rad) the rounding
-step of φ is about 3 × 10⁻⁵ rad, inside the budget. The implementation keeps
-whole cycles separately if the measured error approaches the budget.
+The requirement comes from the S7 edge-time budget: the phase error must
+stay below `2π · f · 4 ps`, which is 3 × 10⁻⁴ rad at 12.2 MHz, over a whole
+run.
+
+**Integration rule (plan Task 3.4).** The increment over one Fm interval is
+the integral of the degree-5 polynomial through the six samples around it:
+
+```
+φ(t_{m+1}) − φ(t_m) = 2π·h · Σⱼ cⱼ · f(t_{m−2+j}),   c = (11, −93, 802, 802, −93, 11) / 1440
+```
+
+with h = 1/Fm. The weights integrate the Lagrange polynomial through
+m−2 … m+3 over [m, m+1] (exact for degree ≤ 5). For a component e^{jωt} the
+rule's response divided by the exact integral is real (the rule is
+symmetric about the interval's centre), so it adds no phase. Its gain error
+is:
+
+| Frequency | Gain error |
+|-----------|------------|
+| 0.5 MHz | 8 × 10⁻¹² |
+| fsc | 1.0 × 10⁻⁶ |
+| 4.2 MHz | 2.6 × 10⁻⁶ |
+| 6 MHz | 2.2 × 10⁻⁵ |
+
+That is a gain error of at most 0.0002 dB in the recorded video, well inside
+the S2 passband bound. A constant input gives the same increment every
+interval, so a constant level gives an exact constant frequency.
+
+**Accumulation.** The phase is accumulated in turns as a whole number of
+cycles (64-bit integer) plus a fraction in [0, 1). So the rounding error of
+the sum stays at the level of one addition to a number below 1 (10⁻¹⁶ turns)
+and does not grow with the run. The output φ = φ₀ + 2π·(cycles + fraction)
+is rounded once, to half an ulp of φ: over a full side (3600 s,
+φ ≈ 1.8 × 10¹¹ rad) that is 1.5 × 10⁻⁵ rad, or 0.3 ps at 8.1 MHz.
+
+**Phase between samples.** D3 carries f(t_m) as well as φ(t_m). Between
+samples, φ is the cubic Hermite interpolant on φ and its slope 2πf. Its
+error bound, at most 1.1 × 10⁻⁴ rad, is derived in
+[S2](s02-video-rate-converter.md), where it sets Fm. S7 and the carrier
+diagnostic both use this interpolant.
+
+The input is 0 IRE outside the run (as S2), so f = f_b there.
 
 ## Parameters
 
@@ -62,6 +98,8 @@ whole cycles separately if the measured error approaches the budget.
 | `S5.deviation` | 1.7 MHz ± 35 kHz (sync tip → white) |
 | `S5.deviation_span` | 140 IRE (fixed: −40 to +100) |
 | `S5.initial_phase` | 0 rad |
+| `S5.integration_rule` | (11, −93, 802, 802, −93, 11)/1440 |
+| `S5.phase_interpolant` | Cubic Hermite on φ and 2πf |
 
 ## Assumptions and approximations
 
@@ -74,8 +112,10 @@ whole cycles separately if the measured error approaches the budget.
 ## Input/output contract
 
 - **In:** D2 (IRE at `Fm`).
-- **Out:** D3 — φ(t_m) in radians at `Fm`, same time origin, with the slice
-  level *s* ≡ 0 (filled by S6).
+- **Out:** D3 — φ(t_m) in radians and f(t_m) in Hz at `Fm`, same time
+  origin, with the slice level *s* ≡ 0 (filled by S6). For M D2 samples
+  there are M + 1 D3 samples: the last is at the end of the run, so the
+  interpolant covers every instant of it.
 
 ## Project YAML block
 
@@ -93,9 +133,13 @@ The nominal frequencies, φ₀ = 0.
 
 ## Verification
 
-Unit tests (plan Task 3.4): constant −40, 0 and 100 IRE inputs give
-7.614 286, 8.1 and 9.314 286 MHz, measured from the slope of φ, within 1 Hz.
-Output is identical across block sizes.
+`tests/unit/test_fm_phase_modulator.cpp`:
+
+- constant −40, 0 and 100 IRE inputs give 7.614 286, 8.1 and 9.314 286 MHz,
+  measured from the slope of φ, within 1 Hz (plan Task 3.4);
+- φ starts at φ₀, and *s* is 0;
+- a 4.2 MHz, 50 IRE modulation matches the analytic phase within 10⁻⁶ rad;
+- output identical across block sizes.
 
 ## Diagnostic tap
 

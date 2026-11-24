@@ -336,7 +336,8 @@ void ValidateOpticalReadout(OpticalReadoutConfig* config, double track_pitch_um,
                          " µm");
 }
 
-void ValidateTaps(const std::vector<TapConfig>& taps, Checker* checker) {
+void ValidateTaps(const std::vector<TapConfig>& taps, OutputMode mode,
+                  Checker* checker) {
   const std::vector<std::string>& names = TapStageNames();
   std::set<std::string> paths;
   for (std::size_t index = 0; index < taps.size(); ++index) {
@@ -349,6 +350,11 @@ void ValidateTaps(const std::vector<TapConfig>& taps, Checker* checker) {
       }
       checker->Error(path + ".stage = '" + tap.stage +
                      "' is not a stage with a tap: " + accepted);
+    } else if (mode == OutputMode::kCarrierDiagnostic &&
+               !IsCarrierDiagnosticTapStage(tap.stage)) {
+      checker->Error(path + ".stage = '" + tap.stage +
+                     "' does not run with output.mode = carrier_diagnostic, "
+                     "which stops after fm_phase_modulator");
     }
     if (tap.path.empty()) {
       checker->Error(path + ".path must not be empty");
@@ -424,7 +430,7 @@ void ValidateProject(ProjectConfig* config, ProjectDiagnostics* diagnostics) {
     checker.Error("output.rf_path = '" + config->output.rf_path +
                   "' must name a .s16 file");
   }
-  ValidateTaps(config->taps, &checker);
+  ValidateTaps(config->taps, config->output.mode, &checker);
   if (config->resolved) {
     ValidateResolved(*config->resolved, &checker);
   }

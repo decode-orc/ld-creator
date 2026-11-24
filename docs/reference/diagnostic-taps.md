@@ -2,8 +2,8 @@
 
 A **tap** writes the signal between two stages to a file, so each stage can be inspected on its own. Taps are declared in the project's [`diagnostics`](project-file.md#diagnostics) block and never change the RF.
 
-!!! warning "Planned"
-    The tap formats below are implemented and tested, but taps are written only once the pipeline runs, which is not implemented yet.
+!!! warning "Partly implemented"
+    Taps are written by [carrier-diagnostic](../user-manual/carrier-diagnostic.md) runs, which run the stages up to `fm_phase_modulator`; only those five stages can be tapped today. The later stages' taps are written once disc runs are implemented.
 
 Each tap writes two files next to its base `path`: a data file and a YAML descriptor, `<path>.tap.yaml`. All binary data is little-endian.
 
@@ -12,10 +12,10 @@ Each tap writes two files next to its base `path`: a data file and a YAML descri
 | Stage | Representation | Kind | Contents |
 |-------|----------------|------|----------|
 | `cvbs_input` | D1 | sampled | Video in IRE at 4fsc |
-| `video_rate_converter` | D2 | sampled | Video in IRE at the modelling rate |
+| `video_rate_converter` | D2 | sampled | Video in IRE at the modelling rate Fm = 24 fsc ≈ 85.909 MHz |
 | `group_delay_predistorter` | D2 | sampled | Video after group-delay pre-distortion |
 | `video_pre_emphasis` | D2 | sampled | Video after pre-emphasis |
-| `fm_phase_modulator` | D3 | sampled | Carrier phase in radians |
+| `fm_phase_modulator` | D3 | sampled | Carrier phase φ in radians (one sample per modelling-rate period) |
 | `recording_limiter` | D4 | edges | Recorded transition times |
 | `disc_cutter` | D5 | edges | Pit edges on the disc |
 | `optical_readout` | D8 | sampled | Photocurrent at 80 MHz, unpitted land = 1 |

@@ -33,10 +33,32 @@ Derived properties, at nominal t₁ and t₂:
 | Phase at fsc | +12.4° | arg H |
 | Group delay | +200 ns at DC; +54.1 ns at 0.5 MHz; −8.4 ns at fsc; −6.5 ns at 4.2 MHz | `t₁/(1+(ωt₁)²) − t₂/(1+(ωt₂)²)` |
 
-The discretisation method (for example a bilinear transform with
-pre-warping, or a design matched to the analogue response over the band) is
-chosen in plan Task 3.3. Its requirement is a magnitude within 0.05 dB of
-`|H(jω)|` from 0.1 to 6 MHz, with DC gain exactly 1.
+**Discretisation (plan Task 3.3).** The requirement is a magnitude within
+0.05 dB of `|H(jω)|` from 0.1 to 6 MHz, with DC gain exactly 1. H is
+written as a unit path plus a high-pass branch,
+
+```
+H(s) = 1 + (t₁/t₂ − 1) · s·t₂ / (1 + s·t₂)
+```
+
+and the branch is discretised by the bilinear transform
+s = 2Fm·(1 − z⁻¹)/(1 + z⁻¹), without pre-warping. With K = 2Fm:
+
+```
+hp[m] = g·(x[m] − x[m−1]) − p·hp[m−1],   g = K·t₂/(1 + K·t₂),   p = (1 − K·t₂)/(1 + K·t₂)
+y[m]  = x[m] + (t₁/t₂ − 1)·hp[m]
+```
+
+This is exactly the bilinear transform of H(s), since the transform is a
+substitution and so preserves the sum. The branch sees only differences of
+the input, so a constant input passes unchanged in floating point too: the
+DC gain is exactly 1, not just to rounding.
+
+The bilinear transform maps the digital frequency f onto the analogue
+frequency (Fm/π)·tan(πf/Fm). That is 6.097 MHz at f = 6 MHz, a 1.6 %
+warp. Because |H| is nearly flat there, the realised magnitude is within
+**0.0055 dB** of `|H(jω)|` over 0.1–6 MHz (largest at 6 MHz), a ninth of
+the requirement, so pre-warping is not needed.
 
 **Deviation and pre-emphasis (Task 1.6 question 1).** The question was
 whether the §9.2.3 deviation is set before or after pre-emphasis. Since
@@ -70,12 +92,15 @@ by default.
 |--------------|-------|
 | `S4.t1` | 320 ± 8 ns |
 | `S4.t2` | 120 ± 2 ns |
+| `S4.discretisation` | Bilinear transform at Fm, DC gain exactly 1 |
 
 ## Assumptions and approximations
 
 - The analogue pre-emphasis network matched §9.2.4 exactly. Departures within
   tolerance are modelled by setting t₁ and t₂.
-- The discretisation error is the Task 3.3 bound (0.05 dB, 0.1–6 MHz).
+- The discretisation error is the Task 3.3 bound (0.05 dB, 0.1–6 MHz);
+  realised: 0.0055 dB.
+- The filter starts at rest, with the input 0 IRE before the run (as S2).
 
 ## Input/output contract
 
@@ -101,9 +126,16 @@ pre-emphasis is not a LaserVision disc.
 
 ## Verification
 
-Unit tests compare the realised magnitude with `|H(jω)|` from 0.1 to 6 MHz
-(within 0.05 dB) and check DC gain 1. A step response test checks the initial
-peak ratio against t₁/t₂, allowing for the input band limit.
+`tests/unit/test_video_pre_emphasis.cpp`:
+
+- realised magnitude within 0.05 dB of `|H(jω)|` every 10 kHz from 0.1 to
+  6 MHz (plan Task 3.3), and the derived +8.04 dB at fsc;
+- a constant level passes exactly;
+- a step's first output sample is 1 + (t₁/t₂ − 1)·g = 2.590 times the
+  step: within 3 % of t₁/t₂ = 2.667, the difference being the bandwidth of
+  a one-sample step at Fm;
+- a streamed subcarrier has the designed gain; output identical for any
+  block size.
 
 ## Diagnostic tap
 

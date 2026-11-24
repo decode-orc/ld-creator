@@ -51,7 +51,8 @@ amendment to it.
 
 | ID | Name | Value | Tolerance | Unit | Source | Status | Project key |
 |----|------|-------|-----------|------|--------|--------|-------------|
-| S2.modelling_rate | Modelling rate `Fm` | set in plan Task 3.1 | — | Hz | [S2](s02-video-rate-converter.md) | open | fixed |
+| S2.modelling_rate | Modelling rate `Fm` | 24 fsc = 6 × 4fsc = 945/11 MHz ≈ 85 909 091 | exact | Hz | [S2](s02-video-rate-converter.md): cubic Hermite phase error ≤ 1.45 ps against the 4 ps budget | derived | fixed |
+| S2.kernel | Interpolation kernel | Kaiser-windowed sinc, cut-off 2fsc, ±20 input samples, β = 9; each phase scaled to unit DC gain | measured: ≤ 0.0005 dB, ≤ 0.08 ns to 6 MHz; images ≥ 91.5 dB down | — | [S2](s02-video-rate-converter.md) | declared | fixed |
 | S2.passband_error | Allowed interpolation error | ≤ 0.01 dB, ≤ 0.1 ns, 0–6 MHz | — | — | [S2](s02-video-rate-converter.md) (a tenth of the S3/S4 tolerances) | derived | fixed |
 
 ## S3 — Group-delay pre-distortion
@@ -61,6 +62,10 @@ amendment to it.
 | S3.enabled | Pre-distortion applied | `true` | `false` is out of tolerance | — | §9.1.7 "shall" | sourced | `group_delay_predistorter.enabled` |
 | S3.delay_points | Delay table, relative to 0.5 MHz | 0.5: 0; 2: −15; 3: −45; 3.58: −80; 4: −135; 4.2: −200 | ±15 at 2, 3, 3.58; ±30 at 4; ±50 at 4.2 | MHz: ns | §9.1.7, Figure 8 (Amd 2 replacement) | sourced | `group_delay_predistorter.delay_ns` |
 | S3.magnitude | Magnitude response | flat | ±0.1 dB to 4.2 MHz | dB | §9.1.7 (delay only) | declared | fixed |
+| S3.target_curve | Delay between table points | monotone cubic (Fritsch–Butland) through (0, 0) and the table, held beyond the last point | inside the Figure 8 band | ns | [S3](s03-group-delay-predistorter.md) | declared | fixed |
+| S3.filter_taps | Filter length | 48 taps at 4fsc spacing (3.28 µs) | — | — | [S3](s03-group-delay-predistorter.md) | declared | fixed |
+| S3.design_band | Least-squares fit | 0–6.8 MHz, 10 kHz grid; weight 1 to the last table point, 0.1 above; ridge 10⁻⁶ | — | — | [S3](s03-group-delay-predistorter.md) | declared | fixed |
+| S3.bulk_delay | Removed constant delay | the filter span's centre, rounded to whole Fm periods (150 = 1 746.03 ns for the §9.1.7 table) | exact | — | [S3](s03-group-delay-predistorter.md) | derived | fixed |
 
 ## S4 — Video pre-emphasis
 
@@ -70,6 +75,7 @@ amendment to it.
 | S4.t2 | Pole time constant t₂ | 120 | ±2 | ns | §9.2.4, Figure 9 | sourced | `video_pre_emphasis.t2_ns` |
 | S4.hf_gain | High-frequency gain | t₁/t₂ = 2.667 (+8.52 dB) | from t₁, t₂ | — | [S4](s04-video-pre-emphasis.md) | derived | fixed |
 | S4.clipper | Overshoot clipping | none | — | — | Plan Task 1.6 decision | declared | fixed |
+| S4.discretisation | Discrete filter | bilinear transform at Fm, no pre-warping, high-pass form with DC gain exactly 1 | measured ≤ 0.0055 dB, 0.1–6 MHz | — | [S4](s04-video-pre-emphasis.md) | declared | fixed |
 
 ## S5 — FM phase modulator
 
@@ -81,6 +87,8 @@ amendment to it.
 | S5.deviation_span | Span of the deviation | 140 (−40 to +100) | exact | IRE | §9.2.3 | sourced | fixed |
 | S5.slope | Frequency per IRE | 1.7 MHz / 140 = 12 142.857 | from S5.deviation | Hz/IRE | [S5](s05-fm-phase-modulator.md) | derived | fixed |
 | S5.initial_phase | Initial phase φ₀ | 0 | — | rad | [S5](s05-fm-phase-modulator.md) | declared | `fm_phase_modulator.initial_phase_rad` |
+| S5.integration_rule | Phase integration over one Fm interval | (11, −93, 802, 802, −93, 11)/1440 on samples m−2 … m+3 | response error ≤ 2.2 × 10⁻⁵ to 6 MHz | — | [S5](s05-fm-phase-modulator.md) | derived | fixed |
+| S5.phase_interpolant | φ between samples | cubic Hermite on φ and 2πf | ≤ 1.1 × 10⁻⁴ rad (S2 bound) | — | [S5](s05-fm-phase-modulator.md), [S2](s02-video-rate-converter.md) | declared | fixed |
 
 ## S6 — Recording signal combiner
 
@@ -179,6 +187,7 @@ DdD = DomesdayDuplicator repository, commit `0f015fa0c5d7`.
 | S13.filter_components | Anti-alias filter | L401 680 nH, L402 560 nH, C403 330 pF, C404 33 pF, C405 470 pF, C406 100 pF, C407 270 pF, R410 = R411 = 47 Ω | capacitors 5 % | — | DdD schematic | sourced | fixed |
 | S13.filter_measured | Measured front-end response | sheet 1 table | — | dB | DdD gain and filter spreadsheet | sourced | — |
 | S13.quantiser | Quantiser | round(512 + 512u), clamped to 0–1023 | ±0.5 LSB | code | [S13](s13-rf-capture.md) | declared | fixed |
+| S13.ideal_quantiser | `ideal` profile quantiser | round(32768u), clamped to −32768…32767 | ±0.5 LSB | code | [S13](s13-rf-capture.md) | declared | fixed |
 | S13.ideal_filter | `ideal` profile anti-alias filter | passband 0–15 MHz, ripple < 0.01 dB; ≥ 98 dB down from 20 MHz | — | — | [S13](s13-rf-capture.md) | declared | fixed |
 | S13.sample_origin | First sample instant | τ = 0 | — | s | [S13](s13-rf-capture.md) | declared | fixed |
 
@@ -193,7 +202,6 @@ DdD = DomesdayDuplicator repository, commit `0f015fa0c5d7`.
 
 | Row | What would resolve it |
 |-----|-----------------------|
-| S2.modelling_rate | Plan Task 3.1 |
 | S8.edge_profile, S8.length_bias | Model form and a bound now sourced (Isailović 1985 App. 2.2, §2.3.1.6); values still need resist and spot data: Jacobs (Applied Optics 1978); Pasman et al. (SPIE 529, 1985); Bouwhuis et al. (1985), Mastering chapter |
 | S9.copy, S9.pit_geometry | Mechanisms sourced (Isailović 1985 §2.3, §6.2: edge blur by metallization, bump shape); values need Bouwhuis et al. (1985), Legierse & Pasman (1989), or measurement of a pressed disc |
 | S11.model (linear) | Plan Task 10.1, with Hopkins (JOSA 1979) or Bouwhuis et al. (1985), "Read-out of optical discs" |

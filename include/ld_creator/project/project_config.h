@@ -183,4 +183,9 @@ const char* ToString(OutputMode value);
 // tap"), in pipeline order.
 const std::vector<std::string>& TapStageNames();
 
+// True for the stages a carrier-diagnostic run (output.mode
+// carrier_diagnostic) runs, cvbs_input … fm_phase_modulator: the only
+// stages whose taps it can write.
+bool IsCarrierDiagnosticTapStage(const std::string& stage);
+
 }  // namespace ld_creator

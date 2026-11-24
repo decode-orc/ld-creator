@@ -111,12 +111,21 @@ endif()
 # the same code the application runs. Add new sources here as modules land
 # (see docs-tech/design/high-level-design.md, "Module layout").
 add_library(ld_creator_core
+    src/carrier_diagnostic/carrier_diagnostic_renderer.cpp
     src/cli/command_line.cpp
     src/cvbs_input/cvbs_metadata.cpp
     src/cvbs_input/cvbs_video_input.cpp
     src/diagnostics/byte_sink.cpp
     src/diagnostics/tap_writer.cpp
+    src/dsp/fir_response.cpp
+    src/dsp/kaiser_window.cpp
+    src/dsp/linear_solver.cpp
+    src/dsp/monotone_cubic.cpp
+    src/dsp/portable_math.cpp
+    src/fm_phase_modulator/fm_phase_modulator.cpp
+    src/group_delay_predistorter/group_delay_predistorter.cpp
     src/optical_readout/readout_transfer.cpp
+    src/pipeline/carrier_diagnostic_run.cpp
     src/pipeline/run_setup.cpp
     src/project/number_format.cpp
     src/project/project_loader.cpp
@@ -124,8 +133,19 @@ add_library(ld_creator_core
     src/project/project_validator.cpp
     src/project/resolved_project.cpp
     src/project/sha256.cpp
+    src/rf_capture/capture_quantiser.cpp
     src/rf_sample_writer/rf_sample_writer.cpp
+    src/video_pre_emphasis/video_pre_emphasis.cpp
+    src/video_rate_converter/video_rate_converter.cpp
 )
+
+# The RF must be byte-identical on every host (docs-tech/design/
+# high-level-design.md §2.3). Contracting a*b+c into a fused multiply-add
+# changes the rounding, and compilers decide that differently per target, so
+# it is turned off for the model's code.
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(ld_creator_core PRIVATE -ffp-contract=off)
+endif()
 
 target_include_directories(ld_creator_core
     PUBLIC

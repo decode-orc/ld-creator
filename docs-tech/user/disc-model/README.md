@@ -55,7 +55,7 @@ Two time axes run through the model:
 |---|-------------|----------|-------|----------------|
 | D1 | S1 | Composite video | IRE | `double` samples at 4fsc. Sample *n* is at `t = (n + 57/90) / 4fsc` (S1) |
 | D2 | S2–S4 | Composite video | IRE | `double` samples at the modelling rate `Fm`, same time origin |
-| D3 | S5–S6 | Carrier phase φ and slice level *s* | rad; dimensionless | Two `double` sequences at `Fm`. *s* ≡ 0 for video only (S6) |
+| D3 | S5–S6 | Carrier phase φ, its frequency f = φ′/2π, and slice level *s* | rad; Hz; dimensionless | Three `double` sequences at `Fm`, one sample more than D2 (the end of the run). *s* ≡ 0 for video only (S6) |
 | D4 | S7 | Recorded transitions | s | Ordered list of (`t_k`, polarity), `double`. Polarity alternates pit-start/pit-end |
 | D5 | S8 | Cut pit map | m | Ordered list of pit edges as (arc length `x_k` along the spiral, radius `r_k`, polarity), plus the cutting trajectory `x(t)`, `r(t)` |
 | D6 | S9 | Pressed pit map | m | D5 after replication. Edge geometry attributes (width, depth, slope) are added in Phase 8 |

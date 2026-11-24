@@ -126,6 +126,20 @@ TEST(ProjectValidatorTest, RejectsAllowListPathsWithoutATolerance) {
   EXPECT_TRUE(Contains(diagnostics.errors, "'no.such.key'"));
 }
 
+TEST(ProjectValidatorTest, RejectsCarrierDiagnosticTapsOnStagesItDoesNotRun) {
+  ProjectConfig config = IdealCav();
+  config.output.mode = OutputMode::kCarrierDiagnostic;
+  config.taps = {{.stage = "fm_phase_modulator", .path = "/t/a"},
+                 {.stage = "recording_limiter", .path = "/t/b"}};
+  const ProjectDiagnostics diagnostics = Validate(config);
+  ASSERT_EQ(diagnostics.errors.size(), 1U);
+  EXPECT_TRUE(Contains(diagnostics.errors,
+                       "diagnostics.taps[1].stage = 'recording_limiter' does "
+                       "not run with output.mode = carrier_diagnostic"));
+  config.output.mode = OutputMode::kDisc;
+  EXPECT_TRUE(Validate(config).errors.empty());
+}
+
 TEST(ProjectValidatorTest, TreatsDisabledPredistortionAsOutOfTolerance) {
   ProjectConfig config = IdealCav();
   config.group_delay_predistorter.enabled = false;
