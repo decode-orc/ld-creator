@@ -91,7 +91,7 @@ The magnitude is within 0.0064 dB from 0 to 4.2 MHz and within 0.041 dB to
 from nominal because the target's slope goes to zero at 4.2 MHz.
 
 **Interaction with pre-emphasis.** S4's transfer function has a large group
-delay of its own: +200 ns at DC, +54 ns at 0.5 MHz and −8.4 ns at fsc (see
+delay of its own: −200 ns at DC, −54 ns at 0.5 MHz and +8.4 ns at fsc (see
 [S4](s04-video-pre-emphasis.md)).
 The player's de-emphasis is the exact inverse of §9.2.4, so that delay
 cancels between disc and player. §9.1.7 is therefore applied to the video
@@ -156,6 +156,24 @@ comparisons and must be listed in `allow_out_of_tolerance`.
 - a streamed 3.58 MHz sinusoid has the designed filter's gain and phase,
   which checks the advance;
 - `enabled: false` passes D2 unchanged; output identical for any block size.
+
+**Independent check.** `scripts/verify_stages.py` (plan Task 6.2) checks the taps of real runs with tools written independently of the implementation ([scripts/README.md](../../../scripts/README.md)). The response is measured, not designed: H =
+P_xy/P_xx (Welch, 2¹⁵-sample Hann segments) between the `video_rate_converter`
+and `group_delay_predistorter` taps of one frame of a photograph with NTC-7
+and FCC test lines (2T, multiburst, bars). Group delay is the slope of a
+power-weighted line fit to arg H over ±50 kHz:
+
+| f (MHz) | Nominal (ns) | Measured (ns) | Realised, above (ns) | Middle third |
+|---------|--------------|---------------|----------------------|--------------|
+| 2 | −15 | −15.5 | −15.6 | ±5 |
+| 3 | −45 | −46.4 | −46.3 | ±5 |
+| 3.58 | −80 | −81.0 | −81.7 | ±5 |
+| 4 | −135 | −140.5 | −141.1 | ±10 |
+| 4.2 | −200 | −192.2 | −193.2 | ±16.7 |
+
+Largest magnitude error, every 100 kHz from 0.1 to 4.2 MHz: +0.0063 dB
+(limit ±0.1 dB). The measured delays are within 0.7 ns of the designed
+filter's, which is the resolution of the ±50 kHz fit.
 
 ## Diagnostic tap
 

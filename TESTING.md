@@ -172,6 +172,23 @@ Run one lane with `ctest -L unit` or `ctest -L functional`. The `unit` lane is
 the fast, mocked, hermetic one and is the only lane the packaged Nix build
 (`nix build`) runs; keep it that way.
 
+## Independent verification
+
+Before ld-decode is involved, the RF and every diagnostic tap are checked
+against the stage notes by analysis tools that share no code with
+ld-creator or ld-decode (`scripts/`, see `scripts/README.md`):
+
+- `scripts/test_rf_analysis.py` tests the tools themselves on synthetic
+  signals (`python3 -E -m unittest discover -s scripts -p 'test_*.py'`).
+- `scripts/verify_stages.py` runs the pinned videosynth and the built
+  ld-creator on `scripts/projects/` into `build/verification/`, checks
+  each stage's tap against its note, and exits non-zero on a failure. Its
+  results are recorded in the stage notes.
+
+These are developer checks, run in the dev shell. They are not ctest
+targets: the packaged build has no Python, and the stage checks take about
+a minute.
+
 ## Round-trip verification
 
 ld-creator exists to make ld-decode measurable against a known truth:

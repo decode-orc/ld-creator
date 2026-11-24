@@ -58,6 +58,7 @@
 - Fixtures: generated media (CVBS, WAV, EFM, RF) is **never** committed. Round-trip inputs are produced by the pinned videosynth from committed project YAML at test time, into the build tree.
 - Output: tests and scripts must write generated media under the build directory, never into the source tree.
 - CI: the default unit-test lane must stay fast and mocked; do **not** add functional tests to it.
+- Independent verification: `scripts/` analysis tools share no code with ld-creator or ld-decode, run with `python3 -E` in the dev shell, and are developer checks, not ctest targets (TESTING.md, "Independent verification").
 
 ### 3.2 Logging
 - **info**: normal lifecycle messages, stage transitions, validation summaries.

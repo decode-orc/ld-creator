@@ -169,6 +169,15 @@ Unit tests (`tests/unit/test_disc_cutter.cpp`, plan Task 4.3):
 - A length bias of 0.1 µm lengthens every pit and shortens every land by
   0.1 µm.
 
+**Independent check.** `scripts/verify_stages.py` (plan Task 6.2) checks the taps of real runs with tools written independently of the implementation ([scripts/README.md](../../../scripts/README.md)). Each `disc_cutter` (D5) edge is compared with
+the `recording_limiter` (D4) edge of the same index mapped through this
+note's formulas (CAV: s = (2π/T)(r₀t + p·t²/2T), r = r₀ + p·t/T; CLV:
+s = v·t, r = √(r₀² + p·v·t/π)). One frame at CAV 55, 80, 110 and
+144.99 mm and CLV 10.1 and 11.4 m/s: the polarities match at every edge,
+the largest arc-length difference is 2.2 × 10⁻¹⁶ m (a few ulp) and the
+largest radius difference 2.8 × 10⁻¹⁷ m, below 10⁻⁵ ps of track time
+against the 4 ps S7 budget.
+
 ## Diagnostic tap
 
 `disc_cutter`: D5 as binary records (`float64` arc length, `float64` radius,

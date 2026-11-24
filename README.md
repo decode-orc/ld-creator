@@ -51,7 +51,7 @@ the documentation build — are in [BUILDING.md](BUILDING.md).
 include/ld_creator/   Public headers, one directory per module
 src/                  Library implementation and the CLI entry point
 tests/                Unit and functional test suites (see TESTING.md)
-scripts/              Round-trip runners and analysis utilities
+scripts/              Analysis tools and independent stage checks (videosynth projects in scripts/projects/)
 docs/                 MkDocs sources for the published user documentation
 docs-tech/design/     High-level design specification
 docs-tech/user/       Feature notes and implementation plans

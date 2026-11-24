@@ -146,6 +146,24 @@ Unit tests (`tests/unit/test_recording_limiter.cpp`, plan Task 4.2):
 - The output is identical for block sizes 1, 2, 7, 4096 and the whole run.
 - A non-zero slice level and a phase that does not increase are rejected.
 
+**Independent check.** `scripts/verify_stages.py` (plan Task 6.2) checks the taps of real runs with tools written independently of the implementation ([scripts/README.md](../../../scripts/README.md)). The reference edges are the roots of
+φ(t) = (k + ½)π found from the D3 tap alone, on the degree-5 Lagrange
+polynomial through the six φ samples around each bracket (no use of f or
+of the Hermite interpolant). One frame, at each of CAV 55, 80, 110 and
+144.99 mm and CLV 10.1 and 11.4 m/s:
+
+| Quantity | Result | Limit |
+|----------|--------|-------|
+| Edges up to the last φ sample of the frame | 567 056, as the bracket rule predicts | exact |
+| Polarity | pit end at φ = (2n + ½)π, pit start at (2n + 1½)π, every edge | exact |
+| Largest edge-time difference | 0.272 ps (rms 0.006 ps) | 4 ps (`S7.edge_budget`) |
+
+The check excludes the first and last 1 µs of the run. There the input steps
+to 0 IRE outside the run, and the φ-only polynomial reference (not the
+stage) loses accuracy: up to 3.8 ps within 0.3 µs of the end. One edge per
+frame falls after the tap's last whole Fm sample and cannot be checked from
+it.
+
 ## Diagnostic tap
 
 `recording_limiter`: D4 as binary records (`float64` time, `int8` polarity)

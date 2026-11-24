@@ -71,6 +71,24 @@ nix develop "path:$PWD" --command ctest --test-dir build -L functional --output-
 
 See [TESTING.md](TESTING.md) for the testing strategy and conventions.
 
+### Analysis scripts
+
+The independent verification scripts in [scripts/](scripts/) use the dev
+shell's Python (NumPy, SciPy). Run them with `python3 -E`: the pinned
+ld-decode package exports a `PYTHONPATH` for its own Python into the shell,
+and `-E` ignores it.
+
+```bash
+# Self-tests of the analysis tools
+nix develop "path:$PWD" --command python3 -E -m unittest discover -s scripts -p 'test_*.py'
+
+# Stage-by-stage checks and RF occupancy survey (needs build/ld-creator)
+nix develop "path:$PWD" --command python3 -E scripts/verify_stages.py
+```
+
+Plain shell, with Python 3, NumPy and SciPy installed:
+`python3 -E scripts/verify_stages.py --build-dir build`.
+
 ## Nix package and apps
 
 ```bash

@@ -17,6 +17,7 @@ implemented.
 | [parameter-register.md](parameter-register.md) | Every parameter, its value, tolerance, source, status and project key |
 | [project-file-schema.md](project-file-schema.md) | How the project YAML relates to the model; keys reserved for later phases. The key-by-key reference is [docs/reference/project-file.md](../../../docs/reference/project-file.md) |
 | [examples/](examples/) | Example projects: the ideal CAV disc, and a project with every key set |
+| [rf-occupancy.md](rf-occupancy.md) | Instantaneous-frequency range, occupied bandwidth and residual above the capture Nyquist frequency for each test pattern (plan Task 6.3) |
 | [secondary-sources.md](secondary-sources.md) | Sources beyond the IEC standard, what each establishes, and what is still unsourced |
 | [source-acquisition.md](source-acquisition.md) | Sources still to acquire, in order of importance, with links |
 | [../ntsc-round-trip-metrics.md](../ntsc-round-trip-metrics.md) | How a round trip is aligned, measured and judged |

@@ -31,7 +31,7 @@ Derived properties, at nominal t₁ and t₂:
 | Pole | 1/(2πt₂) = 1.326 MHz | |
 | Gain at fsc (3.579545 MHz) | 2.525 (+8.04 dB) | \|H(j2πf)\| |
 | Phase at fsc | +12.4° | arg H |
-| Group delay | +200 ns at DC; +54.1 ns at 0.5 MHz; −8.4 ns at fsc; −6.5 ns at 4.2 MHz | `t₁/(1+(ωt₁)²) − t₂/(1+(ωt₂)²)` |
+| Group delay | −200 ns at DC; −54.1 ns at 0.5 MHz; +8.4 ns at fsc; +6.5 ns at 4.2 MHz: a lead network advances low frequencies | `−d(arg H)/dω = t₂/(1+(ωt₂)²) − t₁/(1+(ωt₁)²)` |
 
 **Discretisation (plan Task 3.3).** The requirement is a magnitude within
 0.05 dB of `|H(jω)|` from 0.1 to 6 MHz, with DC gain exactly 1. H is
@@ -137,10 +137,39 @@ pre-emphasis is not a LaserVision disc.
 - a streamed subcarrier has the designed gain; output identical for any
   block size.
 
+**Independent check.** `scripts/verify_stages.py` (plan Task 6.2) checks the taps of real runs with tools written independently of the implementation ([scripts/README.md](../../../scripts/README.md)). H = P_xy/P_xx between the
+`group_delay_predistorter` and `video_pre_emphasis` taps of one frame (a
+photograph with NTC-7 and FCC test lines), against the analytic
+(1 + s·t₁)/(1 + s·t₂):
+
+| f (MHz) | Analytic | Magnitude error | Phase error | Group delay | Analytic delay |
+|---------|----------|-----------------|-------------|-------------|----------------|
+| 0.1 | +0.147 dB | +0.0010 dB | +0.002° | −188.1 ns | −188.2 ns |
+| 0.5 | +2.456 dB | +0.0011 dB | −0.001° | −54.6 ns | −54.1 ns |
+| 1 | +5.072 dB | +0.0053 dB | −0.008° | +12.8 ns | +13.1 ns |
+| 2 | +7.197 dB | +0.0044 dB | −0.027° | +18.1 ns | +18.0 ns |
+| 3.58 | +8.044 dB | +0.0052 dB | −0.064° | +8.45 ns | +8.42 ns |
+| 4.2 | +8.167 dB | +0.0054 dB | −0.079° | +6.52 ns | +6.46 ns |
+| 6 | +8.342 dB | +0.0057 dB | −0.123° | +3.46 ns | +3.41 ns |
+
+Every magnitude is within the 0.05 dB limit; the largest, 0.0057 dB at
+6 MHz, matches the 0.0055 dB bilinear warp derived above (the input is
+74 dB below its peak there, so the estimate is still exact in a noiseless
+run). The phase error grows with frequency as the warp predicts.
+
+This check found a sign error in this note: the group-delay row of the
+first table gave `+d(arg H)/dω` as the group delay. A lead network advances
+low frequencies, so the delay is −200 ns at DC, as now stated. The
+implementation was not affected; S3's note repeated the error and is
+corrected too.
+
 ## Diagnostic tap
 
 `video_pre_emphasis`: D2 after the stage.
 
 ## Open items
 
-None.
+- **Resolved (plan Task 6.2):** the group-delay row of the derived-property
+  table had the wrong sign. The independent check (Verification) measured
+  −200 ns at DC, and the row now gives −d(arg H)/dω. No code used the
+  values.

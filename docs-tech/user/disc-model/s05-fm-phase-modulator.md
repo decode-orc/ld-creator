@@ -141,6 +141,23 @@ The nominal frequencies, φ₀ = 0.
 - a 4.2 MHz, 50 IRE modulation matches the analytic phase within 10⁻⁶ rad;
 - output identical across block sizes.
 
+**Independent check.** `scripts/verify_stages.py` (plan Task 6.2) checks the taps of real runs with tools written independently of the implementation ([scripts/README.md](../../../scripts/README.md)). One frame (a photograph with NTC-7 and FCC test
+lines), CAV 55 mm. The carrier is the least-squares phase slope over each
+constant-level window, measured three ways: from φ (D3), from the analytic
+signal of the photocurrent (D8), and from the captured RF (`.s16`, 40 MHz,
+10-bit). Windows start at least 3 µs after a transition, so S3's FIR and
+S4's relaxation have settled. Worst window, against `f_b + k·v`:
+
+| Level | Nominal | Windows | φ (D3) | Photocurrent | Captured RF | Limit |
+|-------|---------|---------|--------|--------------|-------------|-------|
+| Sync tip (broad pulses) | 7.614 286 MHz | 10 | < 0.001 Hz | < 0.1 Hz | −1.6 Hz | ±5 kHz |
+| Blanking (VBI lines 10–16, 273–279) | 8.100 000 MHz | 14 | < 0.001 Hz | < 0.1 Hz | +0.2 Hz | ±5 kHz |
+| White (NTC-7 bar, line 17) | 9.314 286 MHz | 1 | < 0.001 Hz | < 0.1 Hz | −1.0 Hz | ±5 kHz |
+
+The D1 level in every window is the nominal IRE to 10⁻⁴. The peak and
+minimum instantaneous frequency of each test pattern are in
+[rf-occupancy.md](rf-occupancy.md).
+
 ## Diagnostic tap
 
 `fm_phase_modulator`: φ as `float64` with a descriptor. The carrier

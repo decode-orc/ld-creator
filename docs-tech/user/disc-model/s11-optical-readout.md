@@ -97,7 +97,9 @@ Temporal cut-off `fc·v` for the scanning speeds of S8:
 Pre-emphasis overshoot can take the instantaneous carrier to about 12.2 MHz
 (S4). On CLV discs and at the inner CAV radius that lies close to the
 cut-off, so those excursions are strongly attenuated by the readout itself.
-This is a prediction for Phase 6 to check, not an assumption.
+This was a prediction for Phase 6 to check. Measured
+([rf-occupancy.md](rf-occupancy.md)), the test patterns peak at 8.7–11.7 MHz,
+where H at 55 mm is 2–20 dB below its value at the blanking carrier.
 
 ### Linear readout model (initial model)
 
@@ -306,6 +308,55 @@ inside Figure 18; the output does not depend on block size; and the
 finite-width bound above. The spot diameter and ring level were computed
 for this note (Pupil).
 
+**Independent check.** `scripts/verify_stages.py` (plan Task 6.2) checks the
+taps of real runs with tools written independently of the implementation
+([scripts/README.md](../../../scripts/README.md)). H is recomputed from this
+note's pupil by adaptive quadrature (`rf_analysis.readout_transfer`; it
+reproduces the uniform-pupil closed form to 10⁻¹⁰ and 0.21317 at
+802 pits/mm). In each constant-level window of one frame (as for
+[S5](s05-fm-phase-modulator.md)), the photocurrent (D8) is fitted with a
+constant and harmonics 1–5 of the carrier measured from φ, and compared with
+`(2/π)·m·H(V)`, `(2/(3π))·m·H(3V)` and the mean `1 − m/2`, where
+V = f/v with v from the S8 geometry and m from the resolved `hfmi`
+(m = 1):
+
+| Run | v (m/s) | Blanking: cycles/mm | ν/fc | Fundamental | 3rd harmonic | Worst error, all levels |
+|-----|---------|---------------------|------|-------------|--------------|-------------------------|
+| CAV 55 mm | 10.357 | 782.1 | 0.619 | 0.14699 | 0 (above fc) | 1.1 × 10⁻⁷ |
+| CAV 80 mm | 15.065 | 537.7 | 0.425 | 0.31214 | 0 | 2.4 × 10⁻⁷ |
+| CAV 110 mm | 20.714 | 391.0 | 0.309 | 0.42154 | 0.00252 | 2.2 × 10⁻⁶ |
+| CAV 144.99 mm | 27.303 | 296.7 | 0.235 | 0.48828 | 0.03033 | 2.8 × 10⁻⁶ |
+| CLV 10.1 m/s | 10.100 | 802.0 | 0.634 | 0.13572 | 0 | 1.1 × 10⁻⁸ |
+| CLV 11.4 m/s | 11.400 | 710.5 | 0.562 | 0.19074 | 0 | 1.0 × 10⁻⁷ |
+
+Measured and predicted amplitudes agree to the digits shown at all three
+levels (sync tip, blanking, white). The worst error over all levels and
+harmonics is 2.8 × 10⁻⁶, a twenty-fifth of the (2/π)·m·1.1 × 10⁻⁴ =
+7.0 × 10⁻⁵ that the kernel's transfer error allows. The mean level is
+1 − m/2 to 1.1 × 10⁻¹⁰. At CLV 10.1 m/s the blanking carrier is at
+801.98 pits/mm, and its measured peak-to-peak, 0.27144, is the HFMI
+(0.27142 at exactly 802 pits/mm) to the slope of H over that 0.02 pits/mm.
+
+**Demodulated video gain.** The analytic signal of the photocurrent (1–18 MHz
+band) is demodulated, and each FCC multiburst packet (line 18, on a 40 IRE
+pedestal) is fitted at its frequency. Its deviation, divided by k times the
+packet's amplitude in the `video_pre_emphasis` tap, is the readout's effect
+on the demodulated video. The narrow-band estimate is `(a + b)/2` (open
+items) at the packet's measured mean carrier:
+
+| f (MHz) | Index | 55 mm: measured | estimate | 144.99 mm: measured | estimate |
+|---------|-------|-----------------|----------|---------------------|----------|
+| 0.5 | 0.97 | +0.09 dB | +0.09 dB | −0.00 dB | −0.00 dB |
+| 1.25 | 0.57 | +0.55 dB | +0.54 dB | −0.02 dB | −0.01 dB |
+| 2.0 | 0.42 | +1.33 dB | +1.31 dB | −0.04 dB | −0.04 dB |
+| 3.0 | 0.30 | +2.65 dB | +2.62 dB | −0.11 dB | −0.08 dB |
+| 3.58 | 0.26 | +3.45 dB | +3.44 dB | −0.14 dB | −0.12 dB |
+| 4.1 | 0.23 | +4.25 dB | +4.19 dB | −0.20 dB | −0.15 dB |
+
+The carrier is 8.58 MHz, so the 3.58 MHz gain lies between the +2.7 dB
+(8.1 MHz) and +4.8 dB (9.3 MHz) predicted below. The estimate holds to
+0.06 dB even at a modulation index near 1.
+
 ## Diagnostic tap
 
 `optical_readout`: D8 as `float64` at Fr with a descriptor.
@@ -333,7 +384,8 @@ for this note (Pupil).
   pupil, +2.7 dB with the Gaussian applied once (this note's model), and
   +4.6 dB with it applied on both paths. HFMI at 802 pits/mm is 0.250, 0.213
   and 0.168 respectively.
-- **Effect on demodulated video (prediction for Phase 6).** With the FM
+- **Effect on demodulated video (prediction for Phase 6; confirmed, see
+  Verification).** With the FM
   narrow-band approximation of Isailović eqs 6-17 and 6-18, a component at
   video frequency `f_m` demodulates with gain `(a + b)/2`, where `a` and `b`
   are `H` at `f_c − f_m` and `f_c + f_m` relative to `H` at `f_c`. With this

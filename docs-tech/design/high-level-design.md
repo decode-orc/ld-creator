@@ -349,7 +349,34 @@ receive dependencies by constructor injection (TESTING.md).
 
 ---
 
-## 5. Round-trip harness — *designed*
+## 5. Independent verification — *implemented*
+
+`scripts/` checks the RF and the diagnostic taps (§2.3) against the stage
+notes without ld-decode (plan Phase 6). `rf_analysis.py` holds the tools:
+tap reader, analytic-signal instantaneous frequency, sub-sample level and
+phase crossings, Welch spectra and transfer functions, and the readout
+transfer H(ν) by direct quadrature. They are written from the notes'
+equations and import nothing from ld-creator, so they do not share its
+errors.
+
+`verify_stages.py` runs the pinned videosynth and the built ld-creator on
+the projects in `scripts/projects/` into `build/verification/`. It checks:
+
+- S3 and S4 against their transfer functions;
+- S5 at sync tip, blanking and white;
+- S7 edges against φ;
+- S8 track positions;
+- S11 modulation depth and demodulated gain against radius.
+
+It then surveys each test pattern's instantaneous-frequency range, occupied
+bandwidth and residual above the capture Nyquist frequency. The results are
+recorded in the stage notes and in
+[../user/disc-model/rf-occupancy.md](../user/disc-model/rf-occupancy.md).
+See `scripts/README.md`.
+
+---
+
+## 6. Round-trip harness — *designed*
 
 Functional tests and `scripts/` drive the loop in §1 with the pinned tools:
 
@@ -364,7 +391,7 @@ differ in one stage block.
 
 ---
 
-## 6. Open questions
+## 7. Open questions
 
 - PAL analogue/digital audio coexistence on the low band (§3.4).
 - The computed DomesdayDuplicator filter response is 0.5–2.9 dB above the

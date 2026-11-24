@@ -1,0 +1,75 @@
+# videosynth project for scripts/verify_stages.py (plan Task 6.3): one NTSC
+# frame of each bundled test pattern, in the order the script lists them, with
+# no test lines and no impairments. Generated into the build tree when the
+# script runs.
+
+project:
+  name: LdCreatorPatternOccupancy
+  version: "1.0"
+  description: One NTSC frame per test pattern for the RF occupancy survey
+
+cvbs_presets:
+  video_standard_preset: NTSC
+  sample_encoding_preset: CVBS_S16_4FSC
+  signal_state_preset: STANDARD_STABLE_LOCKED
+
+output:
+  video_path: "{output}/patterns.cvbs"
+
+sections:
+  - name: BLACK
+    type: progressive
+    source: "{bundled}/exr/720x486/BLACK.exr"
+    duration_frames: 1
+  - name: 75_BARS
+    type: progressive
+    source: "{bundled}/exr/720x486/75_BARS.exr"
+    duration_frames: 1
+  - name: 100_BARS
+    type: progressive
+    source: "{bundled}/exr/720x486/100_BARS.exr"
+    duration_frames: 1
+  - name: SMPTE_BARS_001
+    type: progressive
+    source: "{bundled}/exr/720x486/SMPTE_BARS_001.exr"
+    duration_frames: 1
+  - name: PLUGE
+    type: progressive
+    source: "{bundled}/exr/720x486/PLUGE.exr"
+    duration_frames: 1
+  - name: GREY_5H_STEP
+    type: progressive
+    source: "{bundled}/exr/720x486/GREY_5H_STEP.exr"
+    duration_frames: 1
+  - name: LUMA_RAMP
+    type: progressive
+    source: "{bundled}/exr/720x486/LUMA_RAMP.exr"
+    duration_frames: 1
+  - name: FULL_RAMP
+    type: progressive
+    source: "{bundled}/exr/720x486/FULL_RAMP.exr"
+    duration_frames: 1
+  - name: MULTIBURST
+    type: progressive
+    source: "{bundled}/exr/720x486/MULTIBURST.exr"
+    duration_frames: 1
+  - name: LUMA_ZONE_PLATE
+    type: progressive
+    source: "{bundled}/exr/720x486/LUMA_ZONE_PLATE.exr"
+    duration_frames: 1
+  - name: CHROMA_ZONE_PLATE
+    type: progressive
+    source: "{bundled}/exr/720x486/CHROMA_ZONE_PLATE.exr"
+    duration_frames: 1
+  - name: GREEN_MAGENTA_EDGES
+    type: progressive
+    source: "{bundled}/exr/720x486/GREEN_MAGENTA_EDGES.exr"
+    duration_frames: 1
+  - name: TARTAN
+    type: progressive
+    source: "{bundled}/exr/720x486/TARTAN.exr"
+    duration_frames: 1
+  - name: PHOTO_BUTTERFLY
+    type: progressive
+    source: "{bundled}/exr/720x486/PHOTO_BUTTERFLY.exr"
+    duration_frames: 1

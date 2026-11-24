@@ -1,0 +1,35 @@
+# videosynth project for scripts/verify_stages.py (plan Task 6.2): one NTSC
+# frame of a natural picture, for broadband content, with the NTC-7 and FCC
+# test lines on their broadcast lines. No impairments. Generated into the
+# build tree when the script runs.
+
+project:
+  name: LdCreatorStageChecks
+  version: "1.0"
+  description: One NTSC frame with VITS for the stage-by-stage checks
+
+cvbs_presets:
+  video_standard_preset: NTSC
+  sample_encoding_preset: CVBS_S16_4FSC
+  signal_state_preset: STANDARD_STABLE_LOCKED
+
+line_injections:
+  placement: standard
+  vits:
+    - vits_type: ntc7-composite
+      target_lines: [17]
+    - vits_type: fcc-multiburst
+      target_lines: [18]
+    - vits_type: ntc7-combination
+      target_lines: [280]
+    - vits_type: fcc-composite
+      target_lines: [281]
+
+output:
+  video_path: "{output}/vits.cvbs"
+
+sections:
+  - name: Butterfly
+    type: progressive
+    source: "{bundled}/exr/720x486/PHOTO_BUTTERFLY.exr"
+    duration_frames: 1
