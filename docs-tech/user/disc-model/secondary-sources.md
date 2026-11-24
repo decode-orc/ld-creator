@@ -16,7 +16,7 @@ by the project's maintainer and may be used freely.
 |-------|----------|---------------------|
 | S13 | `hardware/pcb/RF Amplifier.kicad_sch` (rev 3.0.2) | Every front-end component value: termination, AC coupling, OPA690 gain network, the elliptic low-pass (two inductors, five capacitors, 47 Ω terminations) |
 | S13 | `hardware/pcb/ADC.kicad_sch` | ADS825 10-bit ADC and its reference divider |
-| S13 | `hardware/doc/DdD Gain and filter calculations.xlsx` | Measured amplitude response 10 kHz–21.5 MHz (sheet 1); predicted filter phase 0–16 MHz (sheet 2); gain table and clip level for all 15 switch settings (sheet 3) |
+| S13 | `hardware/doc/DdD Gain and filter calculations.xlsx` | Measured amplitude response 10 kHz–21.5 MHz (sheet 1); measured phase 0–14.5 MHz (sheet 2), both from a real board; gain table and clip level for all 15 switch settings (sheet 3) |
 | S13 | `docs/content/development/hardware-guide.md` | Input impedance, gain theory, filter design (elliptic, −3 dB ≈ 13.8 MHz, < −35 dB at 20 MHz measured), 2 V p-p ADC window, working level 75 % of full scale, 40 MHz clock from an 80 MHz PLL |
 | S13 | `docs/content/development/fpga-decimation-filter.md` | Rationale that frequency-dependent group delay disperses FM; the 20 MSPS decimator (not used for LaserDisc) |
 | S14 | `docs/content/capture-gui/capture-files.md`; `ddd-gui/tests/unit/test_sample_format.cpp` | Capture sample format: signed 16-bit LE mono; 10-bit code *c* stored as (c − 512) × 64 |

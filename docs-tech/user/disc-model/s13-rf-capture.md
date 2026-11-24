@@ -18,8 +18,10 @@ the owner's permission:
 - `hardware/pcb/ADC.kicad_sch`: ADS825 ADC and its reference network.
 - `hardware/doc/DdD Gain and filter calculations.xlsx`: sheet 1, measured
   amplitude response of the whole front end, 10 kHz–21.5 MHz at 1/12-decade
-  steps (200 mV p-p input, gain switch "1000"); sheet 2, the filter design's
-  predicted phase, 0–16 MHz in 250 kHz steps; sheet 3, the gain table.
+  steps (200 mV p-p input, gain switch "1000"); sheet 2, measured phase
+  of the same board, 0–14.5 MHz in 250 kHz steps (the sheet's range runs to
+  16 MHz but is empty above 14.5 MHz); sheet 3, the gain table. Sheets 1
+  and 2 are measurements of a real board, not design predictions.
 - `docs/content/development/hardware-guide.md`: input stage, gain theory,
   filter stage, ADC and FPGA clocking.
 - `docs/content/capture-gui/capture-files.md`: sample format of captures.
@@ -72,10 +74,19 @@ consistent with the resistor tolerance). **From 6.8 to 12.1 MHz it does
 not**: the measurement is 0.5 to 2.9 dB below the nominal model and below
 the whole capacitor span, with the largest gap at 12.1 MHz. Inductor loss
 (Q from 20 to 60) and a load capacitance up to 10 pF do not close the gap
-(both tried), and sheet 2's predicted phase lags the netlist's by about
-3.6°/MHz, as if a further ~10 ns of delay were present. The cause is not
-known (candidates: the OPA690's bandwidth and output impedance into the
-filter's 330 pF, and the measurement setup); the nominal netlist model is
+(both tried). The measured phase (sheet 2) fits the nominal chain plus a
+pure delay of 11 ns: up to 10 MHz the residual is 1.7° rms and at most
+4°. A delay alone leaves the amplitude unchanged and is about the length
+of 2 m of coaxial cable, so it is probably the measurement path. It is
+not modelled, because a constant delay only shifts the capture in time.
+What is left of the phase points the same way as the amplitude: from 6
+to 10 MHz the measured phase lags the delay-corrected model by a further
+3° to 8°, and from 13 MHz it rises faster than the model, by 13° at 13.5
+MHz and 36° at 14.5 MHz. Both fit a real filter edge that is somewhat
+lower in frequency than the nominal one. The cause is not known
+(candidates: component tolerances beyond those tried, the OPA690's
+bandwidth and output impedance into the filter's 330 pF, and the
+measurement setup); the nominal netlist model is
 kept, as decided above, and the discrepancy is an open item for
 calibration (plan Task 10.2). At 21.5 MHz the measured −43.5 dB is far
 above the model's notch, as expected from an instrument's floor.
