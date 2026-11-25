@@ -25,8 +25,8 @@ decode chain.
 
 > **Status:** in development. ld-creator writes the RF of a modelled ideal
 > NTSC video disc (stages S1–S14), as a DomesdayDuplicator capture would
-> record it. Audio, EFM, PAL, disc impairments and the ld-decode round-trip
-> comparison are not yet implemented.
+> record it, and runs the NTSC video round trip through ld-decode. Audio,
+> EFM, PAL and disc impairments are not yet implemented.
 
 ---
 
@@ -35,9 +35,9 @@ decode chain.
 ```bash
 git clone --recurse-submodules https://github.com/decode-orc/ld-creator
 cd ld-creator
-nix develop "path:$PWD" --command cmake -S . -B build -G Ninja
-nix develop "path:$PWD" --command cmake --build build
-nix develop "path:$PWD" --command ctest --test-dir build -L unit --output-on-failure
+nix develop "git+file://$PWD" --command cmake -S . -B build -G Ninja
+nix develop "git+file://$PWD" --command cmake --build build
+nix develop "git+file://$PWD" --command ctest --test-dir build -L unit --output-on-failure
 ```
 
 Full instructions — CMake options, the Nix package, the pinned sister tools and
@@ -51,7 +51,7 @@ the documentation build — are in [BUILDING.md](BUILDING.md).
 include/ld_creator/   Public headers, one directory per module
 src/                  Library implementation and the CLI entry point
 tests/                Unit and functional test suites (see TESTING.md)
-scripts/              Analysis tools and independent stage checks (videosynth projects in scripts/projects/)
+scripts/              Analysis tools, independent stage checks and the round-trip runner
 docs/                 MkDocs sources for the published user documentation
 docs-tech/design/     High-level design specification
 docs-tech/user/       Feature notes and implementation plans

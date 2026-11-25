@@ -1,0 +1,25 @@
+# ld-creator project for the NTSC round trip (plan Tasks 7.1 and 7.4;
+# docs-tech/user/ntsc-round-trip-metrics.md): the ideal disc, CLV. The video
+# carries CAV codes; the disc model does not read them. The round-trip
+# projects differ only in their stage blocks; every key not shown takes its
+# ideal default.
+
+project:
+  name: NtscRoundTripClv
+  version: "1.0"
+  description: Ideal NTSC CLV disc at 10.1 m/s from 55 mm
+
+input:
+  video_path: "{output}/round_trip.cvbs"
+
+disc_cutter:
+  format: clv
+  start_radius_mm: 55.0
+  track_pitch_um: 1.6667
+  # IEC 60857 §4.7.2: 10.1-11.4 m/s. The lowest speed gives the shortest pits,
+  # the readout worst case.
+  linear_velocity_m_s: 10.1
+
+output:
+  rf_path: "{output}/clv.s16"
+

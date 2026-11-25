@@ -10,7 +10,7 @@ errors (plan Task 6.1).
 Run with the dev shell's analysis Python, isolated from the PYTHONPATH that
 the pinned ld-decode package exports:
 
-    nix develop "path:$PWD" --command python3 -E scripts/<script>.py
+    nix develop "git+file://$PWD" --command python3 -E scripts/<script>.py
 """
 
 from __future__ import annotations

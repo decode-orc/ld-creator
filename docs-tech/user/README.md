@@ -11,4 +11,5 @@ Nothing here is published to the user site; user documentation belongs in
 |----------|----------|
 | [ntsc-video-modulation-plan.md](ntsc-video-modulation-plan.md) | Phased plan for NTSC video on a modelled disc |
 | [disc-model/](disc-model/README.md) | Stage notes, parameter register, project-file schema and secondary sources for the disc model |
-| [ntsc-round-trip-metrics.md](ntsc-round-trip-metrics.md) | Alignment, measurements and thresholds for the NTSC round trip |
+| [ntsc-round-trip-metrics.md](ntsc-round-trip-metrics.md) | Alignment, measurements and thresholds for the NTSC round trip, and the baseline results |
+| [ld-decode-findings.md](ld-decode-findings.md) | Discrepancies the round trip attributes to ld-decode, with their evidence |

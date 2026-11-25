@@ -1,0 +1,27 @@
+# ld-creator project for the NTSC round trip (plan Tasks 7.1 and 7.4;
+# docs-tech/user/ntsc-round-trip-metrics.md): the MTF bisection run of the
+# metrics document ("Readout MTF and decoder settings"): the inner-radius
+# disc with the S11 MTF removed by the S12 diagnostic equaliser. The
+# round-trip projects differ only in their stage blocks; every key not shown
+# takes its ideal default.
+
+project:
+  name: NtscRoundTripCavInnerEqualised
+  version: "1.0"
+  description: Ideal NTSC CAV disc at 55 mm with the S12 diagnostic equaliser
+
+input:
+  video_path: "{output}/round_trip.cvbs"
+
+disc_cutter:
+  format: cav
+  # IEC 60857 §4.11: the programme area starts at >= 55 mm.
+  start_radius_mm: 55.0
+  # (145 - 55) mm / 54 000 frames (see the disc-model examples).
+  track_pitch_um: 1.6667
+player_front_end:
+  mtf_equaliser: inverse
+
+output:
+  rf_path: "{output}/cav_inner_equalised.s16"
+

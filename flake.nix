@@ -38,7 +38,8 @@
 
         fs = pkgs.lib.fileset;
 
-        # Explicit source sets. A "path:" flake reference copies the whole
+        # Explicit source sets. The documented reference is git+file, which
+        # copies only tracked files; a "path:" reference would copy the whole
         # working tree, including any local build/ directory, whose
         # CMakeCache.txt would then hijack the sandboxed configure. Listing
         # only what each derivation needs also keeps the package hash stable

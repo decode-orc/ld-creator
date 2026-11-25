@@ -5,7 +5,7 @@
 Acceptance: a synthetic tone is recovered to < 1 kHz and synthetic edges to
 < 0.1 ns. Run:
 
-    nix develop "path:$PWD" --command python3 -E -m unittest discover -s scripts -p 'test_*.py'
+    nix develop "git+file://$PWD" --command python3 -E -m unittest discover -s scripts -p 'test_*.py'
 """
 
 from __future__ import annotations

@@ -1,6 +1,8 @@
 # videosynth project for scripts/verify_stages.py (plan Task 6.3): one NTSC
-# frame of each bundled test pattern, in the order the script lists them, with
-# no test lines and no impairments. Generated into the build tree when the
+# frame of each bundled legal-range test pattern, in the order the script
+# lists them, with no test lines and no impairments. 100 % bars and the
+# full-range ramp are left out: their levels are outside the legal range, so
+# no programme would carry them. Generated into the build tree when the
 # script runs.
 
 project:
@@ -25,10 +27,6 @@ sections:
     type: progressive
     source: "{bundled}/exr/720x486/75_BARS.exr"
     duration_frames: 1
-  - name: 100_BARS
-    type: progressive
-    source: "{bundled}/exr/720x486/100_BARS.exr"
-    duration_frames: 1
   - name: SMPTE_BARS_001
     type: progressive
     source: "{bundled}/exr/720x486/SMPTE_BARS_001.exr"
@@ -45,9 +43,9 @@ sections:
     type: progressive
     source: "{bundled}/exr/720x486/LUMA_RAMP.exr"
     duration_frames: 1
-  - name: FULL_RAMP
+  - name: LEGAL_RAMP
     type: progressive
-    source: "{bundled}/exr/720x486/FULL_RAMP.exr"
+    source: "{bundled}/exr/720x486/LEGAL_RAMP.exr"
     duration_frames: 1
   - name: MULTIBURST
     type: progressive

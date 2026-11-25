@@ -8,7 +8,7 @@ projects in scripts/projects/, with diagnostic taps, into
 rf_analysis.py. Writes results.md and results.json there, and exits with
 status 1 if any check fails.
 
-    nix develop "path:$PWD" --command python3 -E scripts/verify_stages.py
+    nix develop "git+file://$PWD" --command python3 -E scripts/verify_stages.py
 
 Options: --build-dir (default build), --skip-patterns (Task 6.2 only).
 """
@@ -31,10 +31,10 @@ import rf_analysis as ra
 REPO = Path(__file__).resolve().parents[1]
 PROJECTS = REPO / "scripts" / "projects"
 
-# Frames of patterns_videosynth.yaml, in order.
+# Frames of patterns_videosynth.yaml, in order: the legal-range patterns.
 PATTERNS = [
-    "BLACK", "75_BARS", "100_BARS", "SMPTE_BARS_001", "PLUGE", "GREY_5H_STEP",
-    "LUMA_RAMP", "FULL_RAMP", "MULTIBURST", "LUMA_ZONE_PLATE",
+    "BLACK", "75_BARS", "SMPTE_BARS_001", "PLUGE", "GREY_5H_STEP",
+    "LUMA_RAMP", "LEGAL_RAMP", "MULTIBURST", "LUMA_ZONE_PLATE",
     "CHROMA_ZONE_PLATE", "GREEN_MAGENTA_EDGES", "TARTAN", "PHOTO_BUTTERFLY",
 ]
 

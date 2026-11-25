@@ -25,14 +25,14 @@ git submodule update --init --recursive
 Builds are out of source — CMake will refuse to configure into the source directory. Use a separate build directory such as `build/`:
 
 ```bash
-nix develop "path:$PWD" --command cmake -S . -B build -G Ninja
-nix develop "path:$PWD" --command cmake --build build
+nix develop "git+file://$PWD" --command cmake -S . -B build -G Ninja
+nix develop "git+file://$PWD" --command cmake --build build
 ```
 
 The program is written to `build/ld-creator`. Check it runs:
 
 ```bash
-nix develop "path:$PWD" --command ./build/ld-creator --version
+nix develop "git+file://$PWD" --command ./build/ld-creator --version
 ```
 
 ## Run without building a checkout
@@ -48,8 +48,8 @@ nix run github:decode-orc/ld-creator -- --help
 The development shell also provides the exact versions of **videosynth** and **ld-decode** that ld-creator is tested against, so you do not need to install them separately:
 
 ```bash
-nix develop "path:$PWD" --command videosynth --help
-nix develop "path:$PWD" --command ld-decode --help
+nix develop "git+file://$PWD" --command videosynth --help
+nix develop "git+file://$PWD" --command ld-decode --help
 ```
 
 !!! note

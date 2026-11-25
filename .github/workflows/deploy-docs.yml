@@ -39,7 +39,7 @@ jobs:
           use-flakehub: false
 
       - name: Build site with Nix
-        run: nix build "path:$PWD#docs" --print-build-logs
+        run: nix build "git+file://$PWD#docs" --print-build-logs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

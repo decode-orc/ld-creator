@@ -179,7 +179,9 @@ against the stage notes by analysis tools that share no code with
 ld-creator or ld-decode (`scripts/`, see `scripts/README.md`):
 
 - `scripts/test_rf_analysis.py` tests the tools themselves on synthetic
-  signals (`python3 -E -m unittest discover -s scripts -p 'test_*.py'`).
+  signals, `scripts/test_cvbs_compare.py` the round-trip comparator and
+  `scripts/test_reference_demod.py` the reference demodulator
+  (`python3 -E -B -m unittest discover -s scripts -p 'test_*.py'`).
 - `scripts/verify_stages.py` runs the pinned videosynth and the built
   ld-creator on `scripts/projects/` into `build/verification/`, checks
   each stage's tap against its note, and exits non-zero on a failure. Its
@@ -207,11 +209,32 @@ videosynth ──CVBS/WAV/EFM──► ld-creator ──RF──► ld-decode �
   deliberate change that can move every round-trip result; do it in its own
   commit.
 - A round-trip discrepancy is first checked against the specification
-  (`docs-tech/analogue-video-specifications/`). If ld-creator matches the spec,
-  the discrepancy is an ld-decode finding; if not, fix ld-creator.
+  (`docs-tech/analogue-video-specifications/`). If ld-creator does not match
+  the spec, fix ld-creator. If it does, the discrepancy is not yet an
+  ld-decode finding: ld-decode is calibrated on real discs, and a real disc
+  may depart from the standard's nominal values. It is an ld-decode finding
+  only when real-disc evidence (a real capture) shows ld-creator's RF
+  resembles a real disc where the failure arises; until then it is held as
+  unattributed (`docs-tech/user/ntsc-round-trip-metrics.md`, "Triage
+  classes").
 
 `tests/functional/test_disc_output.cpp` runs the first half of the loop:
 videosynth, then an ld-creator disc run, checking the RF's length, its
 independence of thread count and its reproduction from the resolved project.
-The ld-decode half and the comparison are designed but not yet implemented;
-see `docs-tech/design/high-level-design.md`.
+
+The whole loop is `scripts/round_trip.py` (see `scripts/README.md`). It runs
+the committed round-trip projects in `tests/functional/projects/`
+(`ntsc_round_trip_*.yaml`), decodes with the pinned ld-decode, and scores the
+result with `scripts/cvbs_compare.py` against
+`docs-tech/user/ntsc-round-trip-metrics.md`. The recorded baselines and their
+verdicts are in that document; the discrepancies, their evidence and their
+classification are in `docs-tech/user/ld-decode-findings.md`.
+
+`tests/functional/test_round_trip.cpp` runs the loop on the carrier
+diagnostic (about 35 s). It skips when videosynth, ld-decode or the analysis
+Python (NumPy, SciPy) is missing. It asserts the comparator's own check,
+that ld-decode recovers the levels and VBI codes, and that the reference
+IEC 60857 demodulator (`scripts/reference_demod.py`) decodes the carrier
+diagnostic to the truth. It does not assert ld-decode's chroma
+measurements, which are refuted by discrepancies still under triage. The
+disc baselines take about eight minutes and are run with the script.

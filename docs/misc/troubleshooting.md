@@ -5,7 +5,7 @@
 CMake was pointed at the source directory as its build directory. Delete the `CMakeCache.txt` file and `CMakeFiles/` directory it created in the source tree, then configure into a separate directory:
 
 ```bash
-nix develop "path:$PWD" --command cmake -S . -B build -G Ninja
+nix develop "git+file://$PWD" --command cmake -S . -B build -G Ninja
 ```
 
 ## "unknown option", "unknown log level" or "invalid thread count"

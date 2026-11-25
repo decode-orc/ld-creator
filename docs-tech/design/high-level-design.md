@@ -376,18 +376,40 @@ See `scripts/README.md`.
 
 ---
 
-## 6. Round-trip harness — *designed*
+## 6. Round-trip harness — *implemented (NTSC video)*
 
-Functional tests and `scripts/` drive the loop in §1 with the pinned tools:
+`scripts/round_trip.py` drives the loop in §1 with the pinned tools, writing
+only beneath the build directory:
 
-1. Run the pinned `videosynth` on a committed project YAML into the build tree.
-2. Run `ld-creator` on a committed ld-creator project that names that output.
-3. Run the pinned `ld-decode` on the RF.
-4. Compare decoded output against the truth as defined in
-   [../user/ntsc-round-trip-metrics.md](../user/ntsc-round-trip-metrics.md).
+1. Run the pinned `videosynth` on
+   `tests/functional/projects/ntsc_round_trip_videosynth.yaml`: 100 NTSC CAV
+   frames, a 50-frame lead-in and 50 numbered programme frames, with the
+   LaserVision VITS and VBI codes and no `laserdisc.channel` impairments.
+2. Run `ld-creator` on one committed project per baseline
+   (`ntsc_round_trip_<baseline>.yaml`). The projects name the videosynth
+   output through `{output}` and differ only in their stage blocks.
+3. Run the pinned `ld-decode --NTSC` on the RF, adding `-m 0` for RF that
+   carries no readout MTF.
+4. Compare the decoded CVBS with the truth by
+   [../user/ntsc-round-trip-metrics.md](../user/ntsc-round-trip-metrics.md),
+   with `scripts/cvbs_compare.py`. It reads both files through their CVBS
+   metadata, decodes the VBI itself from IEC 60857 §10, and takes nothing
+   from ld-decode but its output.
+
+The runner first checks the comparator: the truth against itself must be
+confirmed and the truth + 2 IRE refuted. It logs the tool versions and
+`flake.lock` pins with every result.
+`tests/functional/test_round_trip.cpp` runs the carrier-diagnostic baseline
+as a `functional` test, skipping when a tool is missing.
+
+The baselines are recorded in the metrics document, and the discrepancies
+classified there; the discrepancies and their evidence are in
+[../user/ld-decode-findings.md](../user/ld-decode-findings.md).
+`scripts/reference_demod.py`, a demodulator written from IEC 60857 alone,
+checks that the RF decodes to the truth independently of ld-decode.
 
 Each disc impairment is tested by an A/B pair of ld-creator projects that
-differ in one stage block.
+differ in one stage block (planned, plan Phase 8).
 
 ---
 

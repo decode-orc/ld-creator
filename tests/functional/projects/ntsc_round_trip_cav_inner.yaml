@@ -1,0 +1,23 @@
+# ld-creator project for the NTSC round trip (plan Tasks 7.1 and 7.4;
+# docs-tech/user/ntsc-round-trip-metrics.md): the ideal disc, CAV, inner
+# radius. The round-trip projects differ only in their stage blocks; every
+# key not shown takes its ideal default.
+
+project:
+  name: NtscRoundTripCavInner
+  version: "1.0"
+  description: Ideal NTSC CAV disc at the inner programme radius, 55 mm
+
+input:
+  video_path: "{output}/round_trip.cvbs"
+
+disc_cutter:
+  format: cav
+  # IEC 60857 §4.11: the programme area starts at >= 55 mm.
+  start_radius_mm: 55.0
+  # (145 - 55) mm / 54 000 frames (see the disc-model examples).
+  track_pitch_um: 1.6667
+
+output:
+  rf_path: "{output}/cav_inner.s16"
+

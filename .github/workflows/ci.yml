@@ -33,7 +33,7 @@ jobs:
 
       - name: Check formatting
         run: |
-          nix develop "path:$PWD" --command bash -c '
+          nix develop "git+file://$PWD" --command bash -c '
           FAIL_COUNT=0
           for f in $(find include src tests -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \)); do
             if ! clang-format -style=file --dry-run --Werror "$f"; then
@@ -64,13 +64,13 @@ jobs:
           use-flakehub: false
 
       - name: Configure
-        run: nix develop "path:$PWD" --command cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        run: nix develop "git+file://$PWD" --command cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build tests
-        run: nix develop "path:$PWD" --command cmake --build build --target ld_creator_tests
+        run: nix develop "git+file://$PWD" --command cmake --build build --target ld_creator_tests
 
       - name: Run unit tests
-        run: nix develop "path:$PWD" --command ctest --test-dir build --output-on-failure -L unit
+        run: nix develop "git+file://$PWD" --command ctest --test-dir build --output-on-failure -L unit
 
   functional-tests:
     name: Functional Tests
@@ -91,13 +91,13 @@ jobs:
           use-flakehub: false
 
       - name: Configure
-        run: nix develop "path:$PWD" --command cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        run: nix develop "git+file://$PWD" --command cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build tests
-        run: nix develop "path:$PWD" --command cmake --build build --target ld_creator_tests
+        run: nix develop "git+file://$PWD" --command cmake --build build --target ld_creator_tests
 
       - name: Run functional tests
-        run: nix develop "path:$PWD" --command ctest --test-dir build --output-on-failure -L functional
+        run: nix develop "git+file://$PWD" --command ctest --test-dir build --output-on-failure -L functional
 
   nix-package:
     name: Nix Package
@@ -116,4 +116,4 @@ jobs:
           use-flakehub: false
 
       - name: Build package and docs
-        run: nix build "path:$PWD#ld-creator" "path:$PWD#docs" --print-build-logs
+        run: nix build "git+file://$PWD#ld-creator" "git+file://$PWD#docs" --print-build-logs

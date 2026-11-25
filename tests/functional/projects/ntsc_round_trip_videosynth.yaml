@@ -1,0 +1,94 @@
+# videosynth project for the NTSC round trip (plan Task 7.1;
+# docs-tech/user/ntsc-round-trip-metrics.md, "Test material"): 100 CAV
+# frames, a 50-frame lead-in then 50 numbered programme frames, with the
+# LaserVision VITS and VBI codes. No laserdisc.channel impairments: the disc
+# effects come only from ld-creator. Generated into the build tree at test
+# time.
+#
+# Sources are legal-range only (no 100 % bars, no full-range ramp). The
+# bundled assets have no flat grey field, so BLACK.exr is the flat field.
+
+project:
+  name: LdCreatorNtscRoundTrip
+  version: "1.0"
+  description: 100 NTSC CAV frames with LaserVision VITS and VBI codes
+
+cvbs_presets:
+  video_standard_preset: NTSC
+  # Signed: the VBI burst on the broad pulses dips below sync tip.
+  sample_encoding_preset: CVBS_S16_4FSC
+  signal_state_preset: STANDARD_STABLE_LOCKED
+
+laserdisc:
+  disc_type: CAV
+  vbi_burst: true
+
+line_injections:
+  placement: laserdisc
+  vits:
+    - vits_type: virs
+      target_lines: [19, 282]
+    - vits_type: ntc7-composite
+      target_lines: [20]
+    - vits_type: ntc7-combination
+      target_lines: [283]
+
+output:
+  video_path: "{output}/round_trip.cvbs"
+
+sections:
+  - name: LeadIn
+    type: progressive
+    source: "{bundled}/exr/720x486/BLACK.exr"
+    duration_frames: 50
+    laserdisc:
+      area: lead_in
+      codes:
+        - code_type: lead_in
+        - code_type: fm_white_flag
+
+  - name: Bars75
+    type: progressive
+    source: "{bundled}/exr/720x486/75_BARS.exr"
+    duration_frames: 13
+    laserdisc:
+      area: programme_area
+      codes:
+        - code_type: picture_number
+          start_value: 1
+        - code_type: fm_picture_number
+          start_value: 1
+        - code_type: fm_white_flag
+
+  - name: LumaRamp
+    type: progressive
+    source: "{bundled}/exr/720x486/LUMA_RAMP.exr"
+    duration_frames: 13
+    laserdisc:
+      area: programme_area
+      codes:
+        - code_type: picture_number
+        - code_type: fm_picture_number
+        - code_type: fm_white_flag
+
+  - name: Multiburst
+    type: progressive
+    source: "{bundled}/exr/720x486/MULTIBURST.exr"
+    duration_frames: 12
+    laserdisc:
+      area: programme_area
+      codes:
+        - code_type: picture_number
+        - code_type: fm_picture_number
+        - code_type: fm_white_flag
+
+  - name: FlatField
+    type: progressive
+    source: "{bundled}/exr/720x486/BLACK.exr"
+    duration_frames: 12
+    laserdisc:
+      area: programme_area
+      codes:
+        - code_type: picture_number
+        - code_type: fm_picture_number
+        - code_type: fm_white_flag

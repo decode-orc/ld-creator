@@ -58,7 +58,7 @@
 - Fixtures: generated media (CVBS, WAV, EFM, RF) is **never** committed. Round-trip inputs are produced by the pinned videosynth from committed project YAML at test time, into the build tree.
 - Output: tests and scripts must write generated media under the build directory, never into the source tree.
 - CI: the default unit-test lane must stay fast and mocked; do **not** add functional tests to it.
-- Independent verification: `scripts/` analysis tools share no code with ld-creator or ld-decode, run with `python3 -E` in the dev shell, and are developer checks, not ctest targets (TESTING.md, "Independent verification").
+- Independent verification: `scripts/` analysis tools share no code with ld-creator or ld-decode, run with `python3 -E -B` in the dev shell (`-B` keeps bytecode out of the source tree), and are developer checks, not ctest targets (TESTING.md, "Independent verification"). The one exception is the round-trip wrapper `tests/functional/test_round_trip.cpp`, which runs `scripts/round_trip.py` on the carrier diagnostic.
 
 ### 3.2 Logging
 - **info**: normal lifecycle messages, stage transitions, validation summaries.
@@ -153,7 +153,9 @@
 
 - The project uses **Nix**; the provided development shell is authoritative.
 - Run normal workflows inside the project shell:
-  `nix develop "path:$PWD" --command <command>`
+  `nix develop "git+file://$PWD" --command <command>`
+  - Use `git+file://`, not `path:`. A `path:` reference copies the whole working tree, including `build/` and its generated media, into the Nix store on every call, and fills the disk. `git+file://` copies only tracked files.
+  - `git add` a new file before `nix build` or `nix flake check` needs it; untracked files are invisible to them.
 - The dev shell puts the pinned `videosynth` and `ld-decode` on `PATH`. Use those, not locally built copies, for round-trip work, so results are reproducible from `flake.lock`.
 - Temporary tools (profiling, debugging, one-off analysis):
   - Use ad-hoc shells:
@@ -233,8 +235,8 @@ Rules:
 - New user-facing feature ⇒ a `user-manual/` page (or section) **and** the
   corresponding `reference/` entries.
 - Verify the site still builds before finishing:
-  `nix develop "path:$PWD" --command mkdocs build --strict`.
-  Preview with `nix develop "path:$PWD" --command mkdocs serve`.
+  `nix develop "git+file://$PWD" --command mkdocs build --strict`.
+  Preview with `nix develop "git+file://$PWD" --command mkdocs serve`.
 
 ### 9.3 Keeping Documentation Current
 

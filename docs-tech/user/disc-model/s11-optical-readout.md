@@ -98,8 +98,8 @@ Pre-emphasis overshoot can take the instantaneous carrier to about 12.2 MHz
 (S4). On CLV discs and at the inner CAV radius that lies close to the
 cut-off, so those excursions are strongly attenuated by the readout itself.
 This was a prediction for Phase 6 to check. Measured
-([rf-occupancy.md](rf-occupancy.md)), the test patterns peak at 8.7–11.7 MHz,
-where H at 55 mm is 2–20 dB below its value at the blanking carrier.
+([rf-occupancy.md](rf-occupancy.md)), the test patterns peak at 8.7–11.5 MHz,
+where H at 55 mm is 2–19 dB below its value at the blanking carrier.
 
 ### Linear readout model (initial model)
 

@@ -262,6 +262,17 @@ the samples the converter takes.
 
 - The 0.5–2.9 dB gap between the computed and measured filter response
   from 6.8 to 12.1 MHz (above; plan Task 10.2).
+- Headroom of the level rule (raised by plan Task 7.4). On the 100-frame
+  round-trip material
+  ([metrics](../ntsc-round-trip-metrics.md#baseline-results-plan-task-74)),
+  91 samples clip at CAV 55 mm, all on the broad-pulse lines where the VBI
+  burst dips below sync tip. On CLV at 10.1 m/s from 55 mm, 869 clip, also
+  at the dark side of pre-emphasised transitions in the VBI codes and the
+  picture. There the slightly shorter pits raise the level setting, and the
+  lowest carriers, which the readout attenuates least, reach the converter's
+  limits. That is the rule working as stated, but whether the DdD guide's
+  75 % should apply to the blanking carrier, as here, or to the largest
+  carrier, is not settled by the sources.
 - ADS825 transfer function. The datasheet (TI SBAS069B, 2002) is now read;
   it has no per-code transition data, so the declared `Q` stands. The DdD
   ties RSEL high and INT/EXT low (ADC schematic), which the datasheet
