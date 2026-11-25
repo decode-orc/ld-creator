@@ -12,21 +12,15 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <numbers>
+#include <stdexcept>
 #include <utility>
 
-#include "ld_creator/dsp/portable_math.h"
 #include "ld_creator/optical_readout/readout_kernel.h"
 #include "ld_creator/rf_capture/capture_quantiser.h"
 
 namespace ld_creator {
 
 namespace {
-
-// Points per period on which the reference waveform's extremes are found:
-// the relative error of the peak-to-peak is below (π/4096)²/2·k² for
-// harmonic k, under 1e-6 for the fundamental.
-constexpr int kReferencePoints = 4096;
 
 // Fr / 40 MHz: the ADC takes every second readout sample.
 constexpr std::int64_t kDecimation = 2;
@@ -37,43 +31,22 @@ constexpr std::size_t kHistorySlack = std::size_t{1} << 16U;
 
 }  // namespace
 
-CaptureLevel ComputeCaptureLevel(
-    const RfCaptureConfig& config, const CaptureChain& chain,
-    const std::function<double(double)>& readout_transfer, double contrast,
-    double blanking_hz, double start_speed_m_s) {
-  struct Harmonic {
-    int order;
-    ComplexValue weight;
-  };
-  std::vector<Harmonic> harmonics;
-  for (int k = 1; static_cast<double>(k) * blanking_hz < 0.5 * kReadoutRateHz;
-       k += 2) {
-    const double frequency = static_cast<double>(k) * blanking_hz;
-    const double optics = readout_transfer(frequency / start_speed_m_s);
-    const double amplitude =
-        -contrast * 2.0 / (std::numbers::pi * static_cast<double>(k)) * optics;
-    harmonics.push_back(
-        {.order = k, .weight = amplitude * chain.ResponseAt(frequency)});
+double CaptureMean(double contrast) { return 1.0 - (0.5 * contrast); }
+
+CaptureLevel MeasuringCaptureLevel(double mean) {
+  return {.mean = mean, .scale = 1.0, .peak_to_peak = 0.0};
+}
+
+CaptureLevel LevelFromExtremes(const RfCaptureConfig& config, double mean,
+                               double lowest, double highest) {
+  if (!(highest > lowest)) {
+    throw std::invalid_argument(
+        "The captured RF has no peak-to-peak to set the level from");
   }
-  double highest = -1e300;
-  double lowest = 1e300;
-  for (int j = 0; j < kReferencePoints; ++j) {
-    double y = 0.0;
-    for (const Harmonic& harmonic : harmonics) {
-      const SinCosValue phase = SinCosTurns(
-          static_cast<double>(harmonic.order) * static_cast<double>(j) /
-          static_cast<double>(kReferencePoints));
-      // Im[w·e^(iθ)].
-      y += (harmonic.weight.re * phase.sin) + (harmonic.weight.im * phase.cos);
-    }
-    highest = std::max(highest, y);
-    lowest = std::min(lowest, y);
-  }
-  CaptureLevel level;
-  level.mean = 1.0 - (0.5 * contrast);
-  level.reference_peak_to_peak = highest - lowest;
-  level.scale = 2.0 * config.level_fraction / level.reference_peak_to_peak;
-  return level;
+  const double peak_to_peak = highest - lowest;
+  return {.mean = mean,
+          .scale = 2.0 * config.level_fraction / peak_to_peak,
+          .peak_to_peak = peak_to_peak};
 }
 
 RfCapture::RfCapture(
@@ -147,6 +120,15 @@ void RfCapture::Emit(std::int64_t available_until, RfCodeBlock* output) {
       tap_buffer_.push_back(u);
     }
     if (sampled) {
+      // Extremes only where the FIR reads no padding (x = 0 before τ = 0
+      // and after the run): the padding's start-up is not signal.
+      const std::int64_t oldest =
+          next_ - chain_.fir.first_index - static_cast<std::int64_t>(count - 1);
+      const std::int64_t newest_index = next_ - chain_.fir.first_index;
+      if (oldest >= 0 && newest_index < received_) {
+        lowest_ = std::min(lowest_, u);
+        highest_ = std::max(highest_, u);
+      }
       const QuantisedCode code = QuantiseCaptureInput(profile_, u);
       output->codes.push_back(code.code);
       if (code.clipped) {

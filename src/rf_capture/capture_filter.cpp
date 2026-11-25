@@ -29,6 +29,13 @@ constexpr double kFeedbackGroundOhm = 200.0;
 constexpr double kFeedbackCapacitorF = 100e-9;
 constexpr double kFeedbackGainOhm = 1500.0;
 
+// OPA690ID closed-loop bandwidth (register S13.amplifier_bandwidth): typical
+// gain-bandwidth product at VS = 5 V (TI SBOS223H, table 6.8), divided by
+// the noise gain at switch "1000", 1 + R406/R405 = 8.5.
+constexpr double kAmplifierGainBandwidthHz = 250e6;
+constexpr double kAmplifierNoiseGain =
+    1.0 + (kFeedbackGainOhm / kFeedbackGroundOhm);
+
 // FIR realisation of the DdD filter (register S13.filter_realisation).
 constexpr std::size_t kDesignTransformLength = std::size_t{1} << 15U;
 constexpr double kTaperStartHz = 36.0e6;
@@ -96,6 +103,34 @@ ComplexValue DddAntiAliasResponse(double frequency_hz,
   return v_c;
 }
 
+DddFilterComponents DddFittedFilterComponents() {
+  // Register S13.filter_fit: least squares over sheet 1 (to 17.8 MHz, 0.1 dB
+  // weight) and sheet 2 (to 15 MHz, 2° weight, with a fitted measurement
+  // delay and gain offset), scripts/fit_ddd_filter.py; 4 significant
+  // figures.
+  DddFilterComponents fitted;
+  fitted.c403_f = 268.1e-12;
+  fitted.l401_h = 622.7e-9;
+  fitted.c404_f = 58.48e-12;
+  fitted.c405_f = 444.0e-12;
+  fitted.l402_h = 566.4e-9;
+  fitted.c406_f = 64.30e-12;
+  fitted.c407_f = 396.7e-12;
+  return fitted;
+}
+
+ComplexValue DddAmplifierBandwidthResponse(double frequency_hz) {
+  const double pole_hz = kAmplifierGainBandwidthHz / kAmplifierNoiseGain;
+  return ComplexValue{.re = 1.0, .im = 0.0} /
+         ComplexValue{.re = 1.0, .im = frequency_hz / pole_hz};
+}
+
+ComplexValue DddHighFrequencyResponse(double frequency_hz,
+                                      const DddFilterComponents& components) {
+  return DddAmplifierBandwidthResponse(frequency_hz) *
+         DddAntiAliasResponse(frequency_hz, components);
+}
+
 ComplexValue DddInputCouplingResponse(double frequency_hz) {
   return FirstOrder(frequency_hz, kInputCouplingTauS, 0.0, kInputCouplingTauS,
                     1.0);
@@ -150,7 +185,7 @@ FirFilter DesignDddAntiAliasFir(const DddFilterComponents& components) {
       const double s = (f - kTaperStartHz) / (kTaperEndHz - kTaperStartHz);
       taper = SmoothStepDown(s);
     }
-    spectrum[k] = taper * DddAntiAliasResponse(f, components);
+    spectrum[k] = taper * DddHighFrequencyResponse(f, components);
     if (k > 0 && k < n / 2) {
       spectrum[n - k] = Conjugate(spectrum[k]);
     }

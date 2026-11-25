@@ -79,7 +79,8 @@ class DiscOutputTest : public ::testing::Test {
 };
 
 // Plan Task 5.4 acceptance: a committed project on a committed videosynth
-// project gives RF of the expected length, without clipping.
+// project gives RF of the expected length; plan Task 5.3: without
+// clipping, the level leaving 25 % of the window as headroom.
 TEST_F(DiscOutputTest, WritesRfOfTheExpectedLengthWithoutClipping) {
   ASSERT_EQ(RunDisc(ProjectsDir() / "ntsc_bars_disc.yaml", 4), EXIT_SUCCESS);
   const std::string rf = ReadFile(dir_ / "ntsc_bars.s16");

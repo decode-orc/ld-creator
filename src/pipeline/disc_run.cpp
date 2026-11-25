@@ -60,27 +60,28 @@ std::int64_t CeilRatio(std::int64_t samples, std::int64_t numerator) {
          kModellingRatioDenominator;
 }
 
-}  // namespace
+// What one pass of the chain leaves behind.
+struct ChainResult {
+  std::int64_t clipped = 0;
+  double lowest = 0.0;
+  double highest = 0.0;
+};
 
-std::int64_t ReadoutSampleCount(std::int64_t frame_count) {
-  return CeilRatio(frame_count * kModellingSamplesPerFrame,
-                   kReadoutRatioNumerator);
-}
+// The measuring pass's S14: discards the codes.
+class DiscardingRfSink final : public IRfSampleSink {
+ public:
+  void Write(const RfCodeBlock& /*block*/) override {}
+  void Finish() override {}
+};
 
-std::int64_t CaptureSampleCount(std::int64_t frame_count) {
-  return CeilRatio(frame_count * kModellingSamplesPerFrame,
-                   kCaptureRatioNumerator);
-}
-
-RfRunResult RunDisc(const PreparedRun& run,
-                    const std::string& ld_creator_version, unsigned int threads,
-                    const RunOutputServices& services) {
-  assert(services.byte_sources != nullptr);
-  assert(services.byte_sinks != nullptr);
+// Runs S1 → … → S13 into `sink` once, writing `run`'s taps. The capture
+// level comes from `level_for_contrast`, given the readout's pit contrast.
+ChainResult RunDiscChain(
+    const PreparedRun& run, unsigned int threads,
+    const RunOutputServices& services,
+    const std::function<CaptureLevel(double)>& level_for_contrast,
+    IRfSampleSink* sink) {
   const ProjectConfig& config = run.config;
-
-  ResolvedRecord record =
-      HashRunInputs(run, ld_creator_version, services.byte_sources);
   const std::unique_ptr<IByteSource> video =
       services.byte_sources->Open(config.input.video_path);
 
@@ -105,18 +106,12 @@ RfRunResult RunDisc(const PreparedRun& run,
       .end_arc_length_m = cutting.ArcLengthAt(FrameTime(run.frame_count))};
   LinearOpticalReadout readout(config.optical_readout, &spot, extent);
   std::unique_ptr<IPlayerFrontEnd> front_end;
-  std::function<double(double)> readout_transfer;
   if (config.player_front_end.mtf_equaliser == MtfEqualiser::kInverse) {
-    auto equaliser = std::make_unique<InverseMtfEqualiser>(
+    front_end = std::make_unique<InverseMtfEqualiser>(
         config.optical_readout.numerical_aperture, readout.Contrast(), &spot,
         extent);
-    const EdgeResponseTable* response = &equaliser->Response();
-    readout_transfer = [response](double nu) { return response->Transfer(nu); };
-    front_end = std::move(equaliser);
   } else {
     front_end = std::make_unique<ReferenceFrontEnd>();
-    const EdgeResponseTable* response = &readout.Response();
-    readout_transfer = [response](double nu) { return response->Transfer(nu); };
   }
 
   ChainBuilder chain(run, services.byte_sinks, threads, 13);
@@ -140,16 +135,9 @@ RfRunResult RunDisc(const PreparedRun& run,
   }
   const CaptureChain capture_chain =
       MakeCaptureChain(config.rf_capture.profile);
-  const CaptureLevel level = ComputeCaptureLevel(
-      config.rf_capture, capture_chain, readout_transfer, readout.Contrast(),
-      config.fm_phase_modulator.blanking_hz, spot.SpeedAt(0.0));
-  RfCapture capture(config.rf_capture.profile, capture_chain, level,
+  RfCapture capture(config.rf_capture.profile, capture_chain,
+                    level_for_contrast(readout.Contrast()),
                     std::move(analogue_taps));
-
-  auto rf_bytes = std::make_unique<HashingByteSink>(
-      services.byte_sinks->Create(config.output.rf_path));
-  HashingByteSink* rf_hash = rf_bytes.get();
-  RfSampleWriter writer(config.rf_capture.profile, rf_bytes.get());
 
   const auto time_range = [](std::int64_t first, std::int64_t end) {
     return std::pair<double, double>(FrameTime(first), FrameTime(end));
@@ -165,7 +153,7 @@ RfRunResult RunDisc(const PreparedRun& run,
   {
     IBlockConsumer<RfCodeBlock>* to_sink =
         chain.Handoff(static_cast<IBlockConsumer<RfCodeBlock>*>(
-                          nodes.Add<RfSinkConsumer>(&writer)),
+                          nodes.Add<RfSinkConsumer>(sink)),
                       12);
     auto* s13 =
         nodes.Add<StageNode<PhotocurrentBlock, RfCodeBlock>>(&capture, to_sink);
@@ -239,10 +227,65 @@ RfRunResult RunDisc(const PreparedRun& run,
     // Closing the chain finishes every stage and closes the RF file.
     RunVideoSource(&input, to_s2);
   }
+  return {.clipped = capture.ClippedSamples(),
+          .lowest = capture.LowestSampled(),
+          .highest = capture.HighestSampled()};
+}
+
+}  // namespace
+
+std::int64_t ReadoutSampleCount(std::int64_t frame_count) {
+  return CeilRatio(frame_count * kModellingSamplesPerFrame,
+                   kReadoutRatioNumerator);
+}
+
+std::int64_t CaptureSampleCount(std::int64_t frame_count) {
+  return CeilRatio(frame_count * kModellingSamplesPerFrame,
+                   kCaptureRatioNumerator);
+}
+
+RfRunResult RunDisc(const PreparedRun& run,
+                    const std::string& ld_creator_version, unsigned int threads,
+                    const RunOutputServices& services) {
+  assert(services.byte_sources != nullptr);
+  assert(services.byte_sinks != nullptr);
+  const ProjectConfig& config = run.config;
+
+  ResolvedRecord record =
+      HashRunInputs(run, ld_creator_version, services.byte_sources);
+
+  // The level rule (S13 note, "Level"): a first pass, without taps or
+  // output, measures the run's filtered RF at the converter's samples; the
+  // second scales its peak-to-peak to level_fraction of the window.
+  PreparedRun measuring = run;
+  measuring.config.taps.clear();
+  DiscardingRfSink discard;
+  const ChainResult measured = RunDiscChain(
+      measuring, threads, services,
+      [](double contrast) {
+        return MeasuringCaptureLevel(CaptureMean(contrast));
+      },
+      &discard);
+
+  auto rf_bytes = std::make_unique<HashingByteSink>(
+      services.byte_sinks->Create(config.output.rf_path));
+  HashingByteSink* rf_hash = rf_bytes.get();
+  RfSampleWriter writer(config.rf_capture.profile, rf_bytes.get());
+  CaptureLevel level;
+  const ChainResult written = RunDiscChain(
+      run, threads, services,
+      [&](double contrast) {
+        level = LevelFromExtremes(config.rf_capture, CaptureMean(contrast),
+                                  measured.lowest, measured.highest);
+        return level;
+      },
+      &writer);
 
   RfRunResult result;
   result.rf_samples = writer.SamplesWritten();
-  result.clipped_samples = capture.ClippedSamples();
+  result.clipped_samples = written.clipped;
+  record.capture_peak_to_peak = level.peak_to_peak;
+  record.capture_scale = level.scale;
   result.rf_sha256 = rf_hash->HexDigest();
   record.rf_sha256 = result.rf_sha256;
   result.resolved_path =

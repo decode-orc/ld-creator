@@ -8,7 +8,7 @@ without a row here fails review (plan, "No unexplained formulas").
 - `sourced`: taken from a cited document;
 - `derived`: computed from sourced values, with the derivation in the stage note;
 - `declared`: a modelling decision, with its reason and error bound in the stage note;
-- `calibrated`: fitted to named measured data (none yet);
+- `calibrated`: fitted to named measured data, with the method in the stage note;
 - `unsourced-ideal`: no source yet, so the stage uses its ideal behaviour and the row is an open item;
 - `open`: to be set by a named plan task.
 
@@ -186,20 +186,22 @@ DdD = DomesdayDuplicator repository, commit `0f015fa0c5d7`.
 | ID | Name | Value | Tolerance | Unit | Source | Status | Project key |
 |----|------|-------|-----------|------|--------|--------|-------------|
 | S13.profile | Capture device | `domesday_duplicator` | — | — | Plan Task 1.6 decision | declared | `rf_capture.profile` |
-| S13.level_fraction | Reference level | 0.75 of full scale | — | — | DdD hardware guide gain table ("Aim for (75%)") | sourced | `rf_capture.level_fraction` |
+| S13.level_fraction | Reference level | 0.75 of full scale: the run's RF peak-to-peak | — | — | DdD hardware guide gain table ("Aim for (75%)") and "Measuring RF signal amplitude"; hardware testing guide | sourced | `rf_capture.level_fraction` |
 | S13.sample_rate | Sample rate | 40 | exact | MHz | DdD hardware guide, ADC and FPGA | sourced | fixed |
 | S13.adc_bits | ADC resolution | 10 (DdD); 16 (`ideal`) | — | bit | DdD schematic (ADS825); [S13](s13-rf-capture.md) | sourced | fixed |
 | S13.adc_full_scale | ADC input range | 2.0 p-p, centred on 2.5 V | — | V | DdD hardware guide, ADC | sourced | fixed |
 | S13.input_termination | Input load | 56 Ω ∥ 500 Ω = 50.36 | — | Ω | DdD schematic note | sourced | fixed |
 | S13.ac_coupling | AC-coupling corner | 1/(2π · 500 Ω · 100 nF) = 3.18 | — | kHz | DdD schematic (C401, R402, R403) | derived | fixed |
-| S13.filter_components | Anti-alias filter | L401 680 nH, L402 560 nH, C403 330 pF, C404 33 pF, C405 470 pF, C406 100 pF, C407 270 pF, R410 = R411 = 47 Ω | capacitors 5 % | — | DdD schematic | sourced | fixed |
+| S13.filter_components | Anti-alias filter, nominal (comparison only; the model uses S13.filter_fit) | L401 680 nH, L402 560 nH, C403 330 pF, C404 33 pF, C405 470 pF, C406 100 pF, C407 270 pF, R410 = R411 = 47 Ω | capacitors 5 % | — | DdD schematic | sourced | fixed |
+| S13.filter_fit | Anti-alias filter, effective values | C403 268.1 pF, L401 622.7 nH, C404 58.48 pF, C405 444.0 pF, L402 566.4 nH, C406 64.30 pF, C407 396.7 pF (R410, R411 nominal) | reproduces sheet 1 within 0.17 dB to 17.8 MHz and sheet 2 within 6° to 16 MHz | — | Weighted least squares to DdD spreadsheet sheets 1 and 2 ([S13](s13-rf-capture.md), `scripts/fit_ddd_filter.py`) | calibrated | fixed |
+| S13.amplifier_bandwidth | OPA690 closed-loop bandwidth | single pole at 250 MHz / 8.5 = 29.4 | typical (no minimum given) | MHz | TI SBOS223H table 6.8 (OPA690ID, VS = 5 V, GBP for G ≥ 10); noise gain 1 + R406/R405 | sourced | fixed |
 | S13.filter_topology | Filter connections | R410 → A; C403 A–gnd; L401 ∥ C404 A–B; C405 B–gnd; L402 ∥ C406 B–C; C407 C–gnd; R411 C → ADC (unloaded) | — | — | DdD board netlist (`Domesday Duplicator.kicad_pcb`); single termination confirmed by sheet 1 at 1 MHz | sourced | fixed |
 | S13.amplifier_feedback | Amplifier feedback | R405 200 Ω, C402 100 nF, A = R406 1.5 kΩ (switch "1000"): shelf zero 936 Hz, pole 7.96 kHz, normalised to unity at high frequency | — | — | DdD schematic; sheet 1 conditions | sourced | fixed |
 | S13.filter_realisation | Realisation at Fr | first-order sections by the bilinear transform; LC filter as an FIR from 2^15 response samples with a smooth step 36–40 MHz | sections within 1.2 × 10⁻⁴; FIR within 10⁻⁸ to 35.7 MHz | — | [S13](s13-rf-capture.md) | declared | fixed |
-| S13.filter_truncation | FIR truncation | Σ\|h\| outside the kept taps ≤ 10⁻⁹ of the total (902 taps) | — | — | [S13](s13-rf-capture.md) | declared | fixed |
+| S13.filter_truncation | FIR truncation | Σ\|h\| outside the kept taps ≤ 10⁻⁹ of the total (757 taps) | — | — | [S13](s13-rf-capture.md) | declared | fixed |
 | S13.capture_mean | D9 mean and padding | 1 − m/2, subtracted before the filters; also D9 before τ = 0 and after the run | — | — | [S13](s13-rf-capture.md) | declared | fixed |
-| S13.level_reference | Level computation | odd harmonics of the blanking pit train below 40 MHz through the implemented readout and chain; extremes on 4096 points per period | < 10⁻⁶ relative | — | [S13](s13-rf-capture.md) | derived | fixed |
-| S13.filter_measured | Measured front-end response | sheet 1 table | — | dB | DdD gain and filter spreadsheet | sourced | — |
+| S13.level_reference | Level computation | two passes: the first measures the extremes of the filtered D9 at the converter's samples, outside the FIR's padding; the second scales their peak-to-peak to 2·level_fraction | exact at the samples | — | [S13](s13-rf-capture.md) | declared | fixed |
+| S13.filter_measured | Measured front-end response | sheet 1 (magnitude) and sheet 2 (phase) tables | — | dB | DdD gain and filter spreadsheet | sourced | — |
 | S13.quantiser | Quantiser | round(512 + 512u), clamped to 0–1023 | ±0.5 LSB | code | [S13](s13-rf-capture.md) | declared | fixed |
 | S13.ideal_quantiser | `ideal` profile quantiser | round(32768u), clamped to −32768…32767 | ±0.5 LSB | code | [S13](s13-rf-capture.md) | declared | fixed |
 | S13.ideal_filter | `ideal` profile anti-alias filter | passband 0–15 MHz, ripple < 0.01 dB; ≥ 98 dB down from 20 MHz; realised as a 105-tap zero-phase Kaiser sinc, cut-off 17.5 MHz, designed for A = 100 dB | — | — | [S13](s13-rf-capture.md); Kaiser 1974 | declared | fixed |
@@ -220,7 +222,7 @@ DdD = DomesdayDuplicator repository, commit `0f015fa0c5d7`.
 | S9.copy, S9.pit_geometry | Mechanisms sourced (Isailović 1985 §2.3, §6.2: edge blur by metallization, bump shape); values need Bouwhuis et al. (1985), Legierse & Pasman (1989), or measurement of a pressed disc |
 | S11.model (linear) | Plan Task 10.1, with Hopkins (JOSA 1979) or Bouwhuis et al. (1985), "Read-out of optical discs" |
 | S13 quantiser transition points | ADS825 datasheet |
-| S13.filter_topology (measured gap) | 0.5–2.9 dB between the computed and measured response from 6.8 to 12.1 MHz; calibration in plan Task 10.2, or a measurement of the board's response with a network analyser |
+| S13.filter_fit (one board) | Fitted to one board's measurement; the physical cause of the nominal model's 0.5–2.9 dB gap is unknown. A network-analyser measurement of a second board would show whether the fit is typical |
 
 The candidate sources are described in
 [secondary-sources.md](secondary-sources.md).

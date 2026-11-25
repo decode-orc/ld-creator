@@ -190,6 +190,10 @@ std::string EmitResolvedProject(const ProjectConfig& config,
   yaml.Key("cvbs_sha256", Quote(record.cvbs_sha256));
   yaml.Key("meta_sha256", Quote(record.meta_sha256));
   yaml.Key("rf_sha256", Quote(record.rf_sha256));
+  if (record.capture_scale > 0.0) {
+    yaml.Key("capture_peak_to_peak", FormatDouble(record.capture_peak_to_peak));
+    yaml.Key("capture_scale", FormatDouble(record.capture_scale));
+  }
   return yaml.Text();
 }
 

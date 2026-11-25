@@ -152,6 +152,12 @@ struct ResolvedRecord {
   std::string cvbs_sha256;
   std::string meta_sha256;
   std::string rf_sha256;
+  // The capture level a disc run measured and applied (S13 note, "Level"):
+  // the filtered RF's peak-to-peak in D9 units and the resulting scale.
+  // Recorded for information; a rerun measures them again. 0 when absent
+  // (a carrier-diagnostic run).
+  double capture_peak_to_peak = 0.0;
+  double capture_scale = 0.0;
 };
 
 // A whole project.

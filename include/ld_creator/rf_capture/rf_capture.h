@@ -10,7 +10,7 @@
 #pragma once
 
 #include <cstdint>
-#include <functional>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -29,21 +29,24 @@ struct CaptureLevel {
   double mean = 0.0;
   // u = scale·y, y the filtered D9.
   double scale = 0.0;
-  // Peak-to-peak of the reference carrier after filtering, in D9 units.
-  double reference_peak_to_peak = 0.0;
+  // Peak-to-peak of the run's filtered D9 at the converter's samples, in D9
+  // units (0 for the measuring pass).
+  double peak_to_peak = 0.0;
 };
 
-// The S13 level rule (S13 note, "Level"): the blanking-level carrier at
-// the start radius, a 50 %-duty pit train at spatial frequency
-// f_b / v₀, read through `readout_transfer` (S11, and S12's equaliser when
-// it is on) and `chain`, has peak-to-peak u of 2·level_fraction. The
-// waveform is summed from its odd harmonics below Fr/2,
-//   y(t) = −m·Σₖ (2/(πk))·K(k·f_b/v₀)·Im[C(k·f_b)·e^(2πi·k·f_b·t)],
-// and its extremes found on 4096 points per period. Pure function.
-CaptureLevel ComputeCaptureLevel(
-    const RfCaptureConfig& config, const CaptureChain& chain,
-    const std::function<double(double)>& readout_transfer, double contrast,
-    double blanking_hz, double start_speed_m_s);
+// The D9 mean of a 50 %-duty pit train of contrast m: 1 − m/2. Pure.
+double CaptureMean(double contrast);
+
+// The level for a measuring pass: unit scale, so u = y.
+CaptureLevel MeasuringCaptureLevel(double mean);
+
+// The S13 level rule (S13 note, "Level"): the run's captured RF, measured
+// at the converter's samples in a first pass with unit scale (lowest and
+// highest y), has a peak-to-peak u of 2·level_fraction: the DdD guide's
+// player RF peak-to-peak set to level_fraction of the converter's window.
+// Pure function. Throws std::invalid_argument when highest ≤ lowest.
+CaptureLevel LevelFromExtremes(const RfCaptureConfig& config, double mean,
+                               double lowest, double highest);
 
 // S13 rf_capture: D9 at Fr → D10 at 40 MHz (S13 note).
 //   x[n] = D9[n] − mean, with x = 0 outside the run;
@@ -65,6 +68,10 @@ class RfCapture final : public IRfCapture {
   void Finish(RfCodeBlock* output) override;
 
   [[nodiscard]] std::int64_t ClippedSamples() const { return clipped_; }
+  // Extremes of u at the converter's samples so far whose FIR window lies
+  // inside the run, away from the padding (+∞/−∞ before any).
+  [[nodiscard]] double LowestSampled() const { return lowest_; }
+  [[nodiscard]] double HighestSampled() const { return highest_; }
 
  private:
   void Emit(std::int64_t available_until, RfCodeBlock* output);
@@ -82,6 +89,8 @@ class RfCapture final : public IRfCapture {
   std::int64_t received_ = 0;
   std::int64_t next_ = 0;
   std::int64_t clipped_ = 0;
+  double lowest_ = std::numeric_limits<double>::infinity();
+  double highest_ = -std::numeric_limits<double>::infinity();
   std::vector<double> tap_buffer_;
 };
 

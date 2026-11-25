@@ -19,11 +19,17 @@ the owner's permission:
 - `hardware/doc/DdD Gain and filter calculations.xlsx`: sheet 1, measured
   amplitude response of the whole front end, 10 kHz–21.5 MHz at 1/12-decade
   steps (200 mV p-p input, gain switch "1000"); sheet 2, measured phase
-  of the same board, 0–14.5 MHz in 250 kHz steps (the sheet's range runs to
-  16 MHz but is empty above 14.5 MHz); sheet 3, the gain table. Sheets 1
-  and 2 are measurements of a real board, not design predictions.
+  of the same board, 0–16 MHz in 250 kHz steps; sheet 3, the gain table.
+  Sheets 1 and 2 are measurements of a real board, not design predictions.
 - `docs/content/development/hardware-guide.md`: input stage, gain theory,
   filter stage, ADC and FPGA clocking.
+- `docs/content/development/hardware-testing.md`: the 75 % working level,
+  and the capture application's amplitude readout (√2 × RMS of the
+  captured signal, as a fraction of full scale).
+- TI OPA690 datasheet (SBOS223H, 2024), table 6.8 (OPA690ID, VS = 5 V):
+  gain-bandwidth product 250 MHz typical for G ≥ 10. The DdD fits the
+  SOIC-8 (D) package (board footprint) on a single +5 V supply
+  (schematic).
 - `docs/content/capture-gui/capture-files.md`: sample format of captures.
 - `ddd-gui/tests/unit/test_sample_format.cpp`: the 16-bit representation of
   a 10-bit code.
@@ -36,20 +42,28 @@ The chain, in signal order:
 |-------|------------|-------|--------|
 | Input termination | R401 56 Ω ∥ bias divider (R402, R403 1 kΩ to the ADC references → 500 Ω) | 50.36 Ω load | Hardware guide, "Input impedance" |
 | AC coupling | C401 100 nF into the 500 Ω divider | First-order high-pass, `1/(2π · 500 Ω · 100 nF)` = 3.18 kHz | Schematic |
-| Amplifier | OPA690, non-inverting, gain `1 + A/(B + 1/(s·C402))`, B = R405 = 200 Ω, C402 = 100 nF, A = the switched parallel combination of R406–R409 (1.5 k, 1 k, 680, 560 Ω) | Gain 2.02–8.5 in 15 settings above a few kHz (unity at DC); flat to beyond 100 MHz. Modelled at switch "1000" (A = 1.5 kΩ, the measured setting): a shelf with its zero at 936 Hz and pole at 7.96 kHz, normalised to unity at high frequency | Hardware guide, "Operational amplifier gain theory"; sheet 3; schematic |
-| Anti-alias filter | L401 680 nH, L402 560 nH, C403 330 pF, C404 33 pF, C405 470 pF, C406 100 pF, C407 270 pF (5 %), R410 and R411 47 Ω | Passive LC elliptic low-pass driven through R410; transfer function computed from the netlist | Schematic; board netlist; hardware guide, "Filter stage" |
+| Amplifier | OPA690, non-inverting, gain `1 + A/(B + 1/(s·C402))`, B = R405 = 200 Ω, C402 = 100 nF, A = the switched parallel combination of R406–R409 (1.5 k, 1 k, 680, 560 Ω) | Gain 2.02–8.5 in 15 settings above a few kHz (unity at DC). Modelled at switch "1000" (A = 1.5 kΩ, the measured setting): a shelf with its zero at 936 Hz and pole at 7.96 kHz, normalised to unity at high frequency; and the closed-loop bandwidth as a single pole at GBP / noise gain = 250 MHz / 8.5 = 29.4 MHz | Hardware guide, "Operational amplifier gain theory"; sheet 3; schematic; OPA690 datasheet table 6.8 |
+| Anti-alias filter | L401 680 nH, L402 560 nH, C403 330 pF, C404 33 pF, C405 470 pF, C406 100 pF, C407 270 pF (5 %), R410 and R411 47 Ω | Passive LC elliptic low-pass driven through R410; transfer function from the netlist with effective component values fitted to the measured board (below) | Schematic; board netlist; hardware guide, "Filter stage"; sheets 1 and 2 |
 | ADC | ADS825, 10-bit, 2 V p-p full scale centred on 2.5 V | Sampling at 40 MHz, quantisation to codes 0–1023 | Hardware guide, "ADC"; schematic |
 | Clock | 80 MHz FPGA PLL from the DE0-Nano 50 MHz oscillator, divided by 2 | Exact 40 MHz at the ideal setting | Hardware guide, "DE0-Nano FPGA" |
 
-**Filter model (decision).** The filter's transfer function is computed from
-the netlist with nominal component values (plan Task 5.3). This is a
-derivation from cited quantities. It is then checked against the measured
-response (sheet 1), which includes the input stage and amplifier. The guide
-reports −3 dB at about 13.8 MHz and less than −35 dB at 20 MHz; sheet 1, taken
-relative to its 1 MHz value, gives −3.3 dB at 12.1 MHz and −28.4 dB at
-17.8 MHz. The filter's group delay is modelled, not only its magnitude: the
-DdD documentation itself notes that delay that varies with frequency
-disperses an FM signal (`fpga-decimation-filter.md`, "Why this filter").
+**Filter model (decision, revised).** Plan Task 5.3 computed the
+filter's transfer function from the netlist with nominal component values,
+then checked it against the measured response (sheet 1), which includes
+the input stage and amplifier. It does not match from 6.8 to 12.1 MHz
+("Comparison with the measurement", below), so the model now uses
+**effective component values fitted to the measured board** (register
+`S13.filter_fit`), in the netlist's topology, together with the amplifier's
+datasheet bandwidth. Fitting to measured data is allowed because the
+dataset is named (sheets 1 and 2) and the method documented
+(`scripts/fit_ddd_filter.py`). The fitted values describe this board's
+response, not its parts; the nominal values are kept for comparison. The
+guide reports −3 dB at about 13.8 MHz and less than −35 dB at 20 MHz;
+sheet 1, taken relative to its 1 MHz value, gives −3.3 dB at 12.1 MHz and
+−28.4 dB at 17.8 MHz. The filter's group delay is modelled, not only its
+magnitude: the DdD documentation itself notes that delay that varies with
+frequency disperses an FM signal (`fpga-decimation-filter.md`, "Why this
+filter").
 
 **Netlist.** The connections are read from the board's netlist
 (`Domesday Duplicator.kicad_pcb`, pad nets, same commit), which is what was
@@ -65,35 +79,68 @@ R411 carries no current. Sheet 1 confirms the single termination: at
 −1.41 dB (a doubly terminated filter would be 6 dB lower). The two traps
 resonate at 33.6 MHz (L401 ∥ C404) and 21.3 MHz (L402 ∥ C406).
 
-**Comparison with the measurement** (sheet 1, at the measured gain; unit
-tests). Up to 5.6 MHz, and at 14.7 and 17.8 MHz, the measured response
-lies within the span of the nominal model over every ±5 % corner of the
-five capacitors, widened by 0.2 dB for the measurement and the gain
-resistors (at low frequency the measurement is 0.12 dB above the model,
-consistent with the resistor tolerance). **From 6.8 to 12.1 MHz it does
-not**: the measurement is 0.5 to 2.9 dB below the nominal model and below
-the whole capacitor span, with the largest gap at 12.1 MHz. Inductor loss
-(Q from 20 to 60) and a load capacitance up to 10 pF do not close the gap
-(both tried). The measured phase (sheet 2) fits the nominal chain plus a
-pure delay of 11 ns: up to 10 MHz the residual is 1.7° rms and at most
-4°. A delay alone leaves the amplitude unchanged and is about the length
-of 2 m of coaxial cable, so it is probably the measurement path. It is
-not modelled, because a constant delay only shifts the capture in time.
-What is left of the phase points the same way as the amplitude: from 6
-to 10 MHz the measured phase lags the delay-corrected model by a further
-3° to 8°, and from 13 MHz it rises faster than the model, by 13° at 13.5
-MHz and 36° at 14.5 MHz. Both fit a real filter edge that is somewhat
-lower in frequency than the nominal one. The cause is not known
-(candidates: component tolerances beyond those tried, the OPA690's
-bandwidth and output impedance into the filter's 330 pF, and the
-measurement setup); the nominal netlist model is
-kept, as decided above, and the discrepancy is an open item for
-calibration (plan Task 10.2). At 21.5 MHz the measured −43.5 dB is far
-above the model's notch, as expected from an instrument's floor.
+**Comparison with the measurement: nominal components** (sheet 1, at
+the measured gain; unit tests). Up to 5.6 MHz, and at 14.7 and 17.8 MHz,
+the measured response lies within the span of the nominal model over every
+±5 % corner of the five capacitors, widened by 0.2 dB for the measurement
+and the gain resistors (at low frequency the measurement is 0.12 dB above
+the model, consistent with the resistor tolerance). **From 6.8 to 12.1 MHz
+it does not**: the measurement is 0.5 to 2.9 dB below the nominal model and
+below the whole capacitor span, with the largest gap at 12.1 MHz. The
+measured phase (sheet 2) fits the nominal chain plus a pure delay of 11 ns
+up to 10 MHz (1.7° rms); from 6 to 10 MHz it lags by a further 3° to 8°,
+and from 13 MHz it rises faster than the model, by 13° at 13.5 MHz and 36°
+at 14.5 MHz. Both point to a real filter edge somewhat lower than the
+nominal one.
 
-**Above 20 MHz** the nominal chain is at least 47.3 dB below its 1 MHz
-level (the guide's design tool predicted 42 dB at 20 MHz; the board
-measured less than 35 dB).
+Physically plausible changes do not close the gap. With each capacitor
+within ±5 %, each inductor within ±10 % and the amplifier's closed-loop
+pole free (the fit drove it to 15.7 MHz, half the datasheet's 29.4 MHz),
+0.7–0.9 dB remains from 10 to 14.7 MHz. Inductor loss (Q from 20 to 60)
+and a load capacitance up to 10 pF do not close it either. The cause is not
+known; the remaining candidates are component values beyond those
+tolerances, the OPA690's output impedance into the filter's first
+capacitor, and the measurement setup.
+
+**The fit** (register `S13.filter_fit`; `scripts/fit_ddd_filter.py`). The
+seven reactive components are fitted, in the netlist's topology, by
+weighted least squares to sheet 1's magnitude up to 17.8 MHz (0.1 dB per
+unit) and sheet 2's phase up to 15 MHz (2° per unit), with the first-order
+sections and the 29.4 MHz amplifier pole fixed. Two nuisance terms are
+fitted and not modelled: a gain offset (+0.11 dB, the gain resistors,
+absorbed by the level setting) and a pure delay (3.7 ns, the measurement
+path). Twelve random starts within ±15 % of nominal, bounds 0.4–2.5 ×
+nominal; 28 further starts all reach the same minimum, with responses
+within 0.001 dB.
+
+| Component | Nominal | Effective | Ratio |
+|-----------|---------|-----------|-------|
+| C403 | 330 pF | 268.1 pF | 0.812 |
+| L401 | 680 nH | 622.7 nH | 0.916 |
+| C404 | 33 pF | 58.48 pF | 1.772 |
+| C405 | 470 pF | 444.0 pF | 0.945 |
+| L402 | 560 nH | 566.4 nH | 1.011 |
+| C406 | 100 pF | 64.30 pF | 0.643 |
+| C407 | 270 pF | 396.7 pF | 1.469 |
+
+The fitted chain reproduces sheet 1 within 0.053 dB rms and 0.17 dB at
+worst to 17.8 MHz (the gap was 2.9 dB), and sheet 2 within 1.6° rms to
+13 MHz and 1.9° rms (6.0° at worst) to 16 MHz. The two traps move to
+26.4 MHz. At 21.5 MHz the measured −43.5 dB is an instrument's floor, not
+the filter, and is not fitted.
+
+Relative to 1 MHz, the fitted response is −1.1 to −3.0 dB from 8 to 13 MHz,
+where the nominal model was −0.3 to +1.2 dB. That band carries the FM
+signal's upper chroma sidebands (11.7–12.9 MHz), so the fit changes the
+captured chroma sidebands' balance. A reference decoder that does not
+compensate the capture filter reads chroma 15.2 % low at 145 mm through
+the fitted filter, and 18.6 % low through the nominal one (round-trip
+metrics, "Results").
+
+**Above 20 MHz** the fitted chain is at least 41.1 dB below its 1 MHz
+level, at 20 MHz itself (the nominal chain: 47.3 dB; the guide's design
+tool predicted 42 dB at 20 MHz; the board measured less than 35 dB, at its
+instrument's floor).
 
 **Realisation at Fr** (register `S13.filter_realisation`). The two
 first-order sections (AC coupling, amplifier shelf) are bilinear
@@ -104,8 +151,8 @@ sampled at 2^15 frequencies across Fr, multiplied by a smooth step from 1
 at 36 MHz to 0 at 40 MHz (D9 holds nothing above 35.7 MHz, so this changes
 nothing that reaches the filter, but makes the periodic response smooth),
 and inverse-transformed. Taps are kept over the shortest span outside which
-Σ|h| is below 1e-9 of the total (register `S13.filter_truncation`): 902
-taps, 254 of them before tap 0. The precursor is the band limit's, not the
+Σ|h| is below 1e-9 of the total (register `S13.filter_truncation`): 757
+taps, 265 of them before tap 0. The precursor is the band limit's, not the
 circuit's: a causal filter's response limited to 40 MHz is not causal. A
 raised-cosine step in place of the smooth one leaves tails falling only as
 n⁻³ and needs 4121 taps. The FIR matches the circuit within 1e-8 to
@@ -131,23 +178,38 @@ Taking every second sample is exact because D9 is band-limited below 40 MHz
 20 MHz that would otherwise alias into the capture, as the real hardware
 does.
 
-**Level (decision).** The DdD guide sets the working level at 75 % of the
-converter's 2 V p-p window ("Aim for (75%)"). The model sets `level` so
-that the peak-to-peak amplitude of the **blanking-level carrier** (8.1 MHz,
-50 % duty) at the run's start radius, after S11–S13's filtering (including
-the S12 MTF equaliser when it is on), is
-`level_fraction` × full scale. This reference is computed analytically from
-the S11 model, so it needs no second pass over the data: the pit train's
-odd harmonics below 40 MHz, `(2/(πk))·m·K(k·f_b/v₀)·C(k·f_b)` with K the
-implemented readout (and equaliser) transfer and C the capture chain's
-response, are summed and their extremes found on 4096 points per period.
-A unit test reads an 8 MHz carrier through S11–S13 and finds 75 % of full
-scale within half a code, for both profiles, with and without the
-equaliser. Lower carriers come out larger: sync reaches about 85 % of full scale at
-the default level at 55 mm. Signals with more
-modulation depth than the reference (lower carrier frequencies, which the
-readout attenuates less) use the headroom above 75 %. Clipped samples are
+**Level (decision, revised 2026-11-25).** The DdD guide sets the working
+level from the player's RF peak-to-peak: measure it on an oscilloscope
+(hardware guide, "Measuring RF signal amplitude"), then choose the gain so
+that it fills 75 % of the converter's 2 V p-p window ("Aim for (75%)"; the
+rest is headroom, "so that signal peaks do not clip", hardware testing
+guide). The model does the same in two passes over the run. The first runs
+the whole chain at unit scale and records the extremes of the filtered D9
+at the converter's samples; the second scales so that their peak-to-peak
+is `level_fraction` × full scale:
+
+```
+scale = 2 · level_fraction / (y_max − y_min)
+```
+
+The extremes are taken only where the FIR reads no padding (the first and
+last ~3 µs of the run), because the padding's start-up is not signal. They
+are taken at the converter's samples, so the run cannot clip unless its
+waveform is more than 2:1 asymmetric about its centre. On programme
+material, whose carrier is not locked to the sampling, the samples reach
+the waveform's peaks; a carrier locked to it (an exact 8 MHz) would be
+sampled at fixed phases and read up to 3 % below its analogue
+peak-to-peak. The level therefore depends on the run's content, as two
+discs set up on a scope would. The resolved project records the measured
+peak-to-peak and scale (`resolved.capture_peak_to_peak`,
+`resolved.capture_scale`), for information; a rerun measures them again.
+The second pass doubles a disc run's time. Clipped samples are still
 counted and reported, as the DdD capture application does.
+
+The previous rule set the level from the blanking carrier alone, computed
+analytically, and lower carriers, which the readout attenuates less, then
+rose above 75 % and, with the fitted board response, clipped. That rule
+did not follow the guide.
 
 **Quantisation (declared).** `Q(u) = clamp(round(512 + 512·u), 0, 1023)`,
 with `u` the ADC input relative to half the full scale (±1 V → ±1). Error:
@@ -185,8 +247,8 @@ with its level reference (`rf_capture.cpp`).
 stage's filter, but uses its sampling grid and quantiser. Capture sample n,
 at τ = n / 40 MHz, falls at n·189/88 Fm samples, and u = level_fraction ·
 cos φ(τ). The carrier has a constant amplitude, so its peak-to-peak is
-exactly level_fraction of full scale, which is the level rule above applied to
-it. It is not a disc.
+exactly level_fraction of full scale, which is the level rule above applied
+to it, with no measuring pass. It is not a disc.
 
 ## Parameters
 
@@ -198,7 +260,9 @@ it. It is not a disc.
 | `S13.quantiser`, `S13.ideal_quantiser` | The two Q rules above |
 | `S13.adc_full_scale` | 2 V p-p |
 | `S13.level_fraction` | 0.75 |
-| `S13.filter_components` | schematic values above |
+| `S13.filter_components` | schematic values above (comparison only) |
+| `S13.filter_fit` | effective component values above, fitted to sheets 1 and 2 |
+| `S13.amplifier_bandwidth` | single pole at 250 MHz / 8.5 = 29.4 MHz |
 | `S13.ac_coupling_corner` | 3.18 kHz |
 | `S13.amplifier_feedback` | R405 200 Ω, C402 100 nF, A = R406 1.5 kΩ (switch "1000") |
 | `S13.filter_topology` | board netlist, single termination (above) |
@@ -210,14 +274,15 @@ it. It is not a disc.
 
 - **Noiseless.** The ADC clock interference the guide describes, ADC noise
   and amplifier noise are Phase 9 work.
-- **Amplifier gain is flat** above its feedback shelf. The OPA690 bandwidth
-  (> 100 MHz) is well above the filter. Because the level is set by
+- **Amplifier bandwidth as one pole** at the datasheet's typical
+  gain-bandwidth product over the noise gain. The datasheet gives no
+  minimum. Because the level is set by
   `level_fraction`, the gain-switch setting only moves the shelf, below
   10 kHz, where the FM signal has no content, so it is not a key in this
   scope; the model uses the measured setting.
-- **Nominal components.** The 5 % capacitor tolerance moves the filter
-  response; the comparison with sheet 1 above states where it covers the
-  measurement and where it does not.
+- **Fitted components.** The filter's response is fitted to one board's
+  measurement. Another board will differ by its component tolerances; the
+  nominal model's ±5 % span shows how much (above).
 - **Exact clock.** The DE0-Nano oscillator tolerance is a later impairment.
 
 ## Input/output contract
@@ -242,14 +307,17 @@ A/B comparisons.
 
 ## Verification
 
-`tests/unit/test_rf_capture.cpp`: the computed response against sheet 1
-(above, with the known deviation guarded at its recorded size); the FIR and
+`tests/unit/test_rf_capture.cpp`: the level arithmetic; a carrier's
+peak-to-peak at 75 % of full scale through the two passes, for both
+profiles, with and without the equaliser; the nominal response against sheet 1
+(above, with the deviation that led to the fit guarded at its recorded
+size); the fitted chain against sheets 1 and 2 (0.18 dB, 6°); the FIR and
 sections against the continuous responses; attenuation above 20 MHz for
-both profiles; the ideal filter's passband; the level rule; no clipping for
+both profiles; the ideal filter's passband; no clipping for
 pit trains at 7.6, 8.1, 9.3 and 12.15 MHz at 55 mm and 145 mm CAV and on
 CLV, with and without the equaliser; block-size independence and exact
 decimation. `tests/functional/test_disc_output.cpp`: no clipped sample in a
-disc run of SMPTE bars.
+disc run of SMPTE bars at 55 mm.
 
 ## Diagnostic tap
 
@@ -260,19 +328,12 @@ the samples the converter takes.
 
 ## Open items
 
-- The 0.5–2.9 dB gap between the computed and measured filter response
-  from 6.8 to 12.1 MHz (above; plan Task 10.2).
-- Headroom of the level rule (raised by plan Task 7.4). On the 100-frame
-  round-trip material
-  ([metrics](../ntsc-round-trip-metrics.md#baseline-results-plan-task-74)),
-  91 samples clip at CAV 55 mm, all on the broad-pulse lines where the VBI
-  burst dips below sync tip. On CLV at 10.1 m/s from 55 mm, 869 clip, also
-  at the dark side of pre-emphasised transitions in the VBI codes and the
-  picture. There the slightly shorter pits raise the level setting, and the
-  lowest carriers, which the readout attenuates least, reach the converter's
-  limits. That is the rule working as stated, but whether the DdD guide's
-  75 % should apply to the blanking carrier, as here, or to the largest
-  carrier, is not settled by the sources.
+- The physical cause of the nominal model's 0.5–2.9 dB gap from 6.8 to
+  12.1 MHz, now covered by the fit (above). A network-analyser measurement
+  of a second board would show whether the fit describes boards in
+  general or this one.
+- Headroom of the level rule: resolved by the measured level above. The
+  blanking-carrier rule it replaces clipped on the round-trip material.
 - ADS825 transfer function. The datasheet (TI SBAS069B, 2002) is now read;
   it has no per-code transition data, so the declared `Q` stands. The DdD
   ties RSEL high and INT/EXT low (ADC schematic), which the datasheet

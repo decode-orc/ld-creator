@@ -30,10 +30,10 @@ The reading spot cannot resolve detail finer than its optical cut-off, 2·NA/λ 
 
 | `rf_capture.profile` | Filters | Converter |
 |----------------------|---------|-----------|
-| `domesday_duplicator` (default) | The Domesday Duplicator's AC coupling, amplifier and elliptic anti-alias filter, computed from its circuit | 10-bit, stored as an uncompressed Domesday Duplicator capture |
+| `domesday_duplicator` (default) | The Domesday Duplicator's AC coupling, amplifier and elliptic anti-alias filter: the circuit's topology, with its response fitted to a measured board | 10-bit, stored as an uncompressed Domesday Duplicator capture |
 | `ideal` | A linear-phase low-pass: flat within 0.01 dB to 15 MHz, at least 98 dB down from 20 MHz | 16-bit |
 
-The level is set so that the blanking-level carrier at the start radius fills `level_fraction` (75 %) of the converter's range. Lower carrier frequencies, such as sync, are attenuated less by the readout and use the headroom above it: about 85 % of full scale. If any sample still reaches the end of the range, the run warns how many were clipped.
+The level is set the way a Domesday Duplicator user sets the gain: so that the RF's peak-to-peak fills `level_fraction` (75 %) of the converter's range, leaving the rest as headroom. ld-creator measures the peak-to-peak in a first pass over the whole run, then writes the RF in a second, so a disc run takes about twice as long as one pass. The resolved project records the measured level.
 
 ## Decoding
 

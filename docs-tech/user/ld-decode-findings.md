@@ -22,7 +22,7 @@ source was not read.
 |------|---------|
 | ld-decode | `8.0.0pre1+git.d6055b3` (flake pin `d6055b303f67869d005a23619e886453ff73130d`) |
 | videosynth | `a995726` (flake pin `a9957262e9aa23ffa5d89cb2a66760506db48462`) |
-| ld-creator | `c647379` plus the Phase 7 working tree |
+| ld-creator | `c647379` plus the Phase 7 working tree, with the DdD filter fitted to the measured board |
 
 ## What is established
 
@@ -47,7 +47,7 @@ RF, scored by the same comparator:
 | Carrier diagnostic | ±0.1 IRE | +0.1 % | +0.0° | ±0.6 % | +0.02 dB | +0.04 dB | −0.1 % | +2.9 ns | confirmed |
 | Carrier diagnostic, no playback equaliser | ±0.1 IRE | +0.1 % | −0.3° | ±1.1 % | +0.06 dB | −0.02 dB | −0.1 % | −82.3 ns | F3d refuted |
 | CAV 145 mm, `ideal` capture | ±0.03 IRE | +0.1 % | −0.0° | ±0.3 % | +0.02 dB | +0.03 dB | −0.0 % | +3.0 ns | confirmed |
-| CAV 145 mm, DdD capture (not compensated) | ±0.1 IRE | −18.6 % | −2.8° | −16 to −20 % | −1.79 dB | −1.33 dB | −18.4 % | −15.3 ns | refuted |
+| CAV 145 mm, DdD capture (not compensated) | ±0.07 IRE | −15.2 % | −2.1° | −13 to −17 % | −1.49 dB | −1.21 dB | −15.7 % | −16.8 ns | refuted |
 
 So:
 
@@ -58,12 +58,14 @@ So:
 - **S6–S13 are right where the readout does not intervene.** At 145 mm the
   optical cut-off is 34.5 MHz, far above every sideband. There the disc RF
   with the `ideal` capture decodes to the truth as well.
-- **The modelled DdD capture filter alone moves chroma by about 18 %.** It
-  does so in a band where the model is known to be 0.5–2.9 dB off the
-  measured board (plan Task 5.3). Any decoder of DdD captures has to
-  compensate that response, and ld-decode's compensation was set on real DdD
-  captures. So on disc RF through the DdD profile, ld-decode's output depends
-  on how closely the modelled filter matches the real one.
+- **The DdD capture filter alone moves chroma by about 15 %.** Any decoder
+  of DdD captures has to compensate that response, and ld-decode's was set
+  on real DdD captures. The filter is now fitted to a real board's measured
+  response, within 0.17 dB and 6° (S13 note, "The fit"). Before the fit,
+  the nominal model was up to 2.9 dB off in this band, and ld-decode's
+  disc-baseline chroma was +5–6 %. With the fitted filter it is +7–11 %,
+  close to the +11.3 % it gives with an ideal capture, so the filter model
+  was masking part of the discrepancy, not causing it.
 
 ### Levels and VBI codes
 
@@ -91,9 +93,9 @@ on all four baselines.
    burst-driven chroma correction presumably work as a system on real RF.
    Its behaviour on MTF-free RF decoded with `-m 0` may be outside its
    design envelope, not a defect.
-2. **The disc baselines depend on two models that are not yet anchored to
-   real discs:**
-   - the DdD capture filter (above);
+2. **The disc baselines depend on models that are anchored only in part:**
+   - the DdD capture filter, now fitted to one board's measurement; other
+     boards differ by their component tolerances;
    - S11's linear readout near the optical cut-off. At 55 mm and on CLV, the
      upper chroma sidebands of all but the darkest levels lie at or past
      0.833·fc. Not even the reference decoder recovers them (CLV: C1 −49.7 %,
@@ -119,9 +121,9 @@ ld-decode's chroma reads high on every baseline:
 |-----|----|
 | Carrier diagnostic | +15.6 % |
 | Carrier diagnostic, `--no_auto_chroma` | −9.3 % |
-| CAV 55 mm | +5.6 % |
-| CAV 145 mm | +5.8 % |
-| CLV | +5.1 % |
+| CAV 55 mm | +9.5 % |
+| CAV 145 mm | +11.3 % |
+| CLV | +6.9 % |
 
 With its defaults, ld-decode sets an inverse-MTF chroma filter from the
 colour burst. On the carrier diagnostic, it reports the uncorrected burst at
@@ -131,10 +133,12 @@ the same RF, the reference decoder's chroma is within 0.1 %.
 
 - **Points towards the decoder:** on the carrier diagnostic, the FM signal is
   shown correct and the correction overshoots.
-- **Points away from it:** reason 1, and on disc RF reason 2 (C1 at 55 mm is
-  +11.3 % with the `ideal` capture, against +5.6 % with the DdD).
+- **Points away from it:** reason 1, and on disc RF reason 2. With the DdD
+  filter fitted to the measured board, the disc-baseline error is no longer
+  confounded by the filter model's known error (C1 at 55 mm: +9.5 % with
+  the fitted DdD, +11.3 % with the `ideal` capture).
 - **Would settle it:** the calibration values ld-decode reports on a real
-  capture, compared with ours; and the DdD filter gap closed (Task 5.3).
+  capture, compared with ours.
 
 ### U2: Chroma-to-luma delay
 
@@ -145,9 +149,9 @@ the same RF, the reference decoder's chroma is within 0.1 %.
 | Reference decoder, carrier diagnostic, with the §9.1.7 equaliser | +2.9 ns |
 
 ld-decode delays chroma about 116 ns relative to luma, where the
-pre-distortion presumes 80 ± 15 ns. The disc baselines show +4 ns at 55 mm,
-+17 ns at 145 mm and +3 ns on CLV, so the decoder's delay changes with its
-MTF compensation.
+pre-distortion presumes 80 ± 15 ns. The disc baselines show +12.8 ns at
+55 mm, +17.4 ns at 145 mm and +13.4 ns on CLV, so the decoder's delay
+changes with its MTF compensation.
 
 - **Points towards the decoder:** the residual on the carrier diagnostic is
   outside §9.1.7's tolerance, and S3 is shown correct.

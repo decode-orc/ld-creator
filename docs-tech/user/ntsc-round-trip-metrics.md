@@ -177,7 +177,8 @@ projects. `scripts/round_trip.py` regenerates them (`build/round_trip/results.md
 
 ### Baseline results (plan Task 7.4)
 
-**Tools.** ld-creator `c647379` with the Phase 7 working tree; videosynth
+**Tools.** ld-creator `c647379` with the Phase 7 working tree, its DdD
+filter fitted to the measured board (S13 note, "The fit"); videosynth
 `a995726` (flake pin `a9957262e9aa23ffa5d89cb2a66760506db48462`); ld-decode
 `8.0.0pre1+git.d6055b3` (flake pin
 `d6055b303f67869d005a23619e886453ff73130d`).
@@ -195,9 +196,9 @@ RF's:
 | Baseline | Project | ld-decode | RF SHA-256 |
 |----------|---------|-----------|------------|
 | Carrier diagnostic | `ntsc_round_trip_carrier.yaml` | `ld-decode --NTSC -m 0` | `54fe522f354b29381e8206ff4b8be877ef0eb8fe0389c1d25c8af2280431395c` |
-| Ideal disc, CAV, 55 mm | `ntsc_round_trip_cav_inner.yaml` | `ld-decode --NTSC` | `45ca292c3880f7419d416714933e1a4e9091a03d8cc71cdb1108de8a9f978336` |
-| Ideal disc, CAV, 144.83–145 mm | `ntsc_round_trip_cav_outer.yaml` | `ld-decode --NTSC` | `851e3d9fea7f118c2f86aa798f896047d7831b592f23adbf6d3b871789d1bba0` |
-| Ideal disc, CLV, 10.1 m/s from 55 mm | `ntsc_round_trip_clv.yaml` | `ld-decode --NTSC` | `a2adf9c9005fd0f7694d54a7dedf16ea6afea36cd6bc4a4ec1073ca5cfcc696b` |
+| Ideal disc, CAV, 55 mm | `ntsc_round_trip_cav_inner.yaml` | `ld-decode --NTSC` | `1a61a328fed8fd281a9d9a7f3d3f0ee05611a0557aad594535e94a64133dd9b3` |
+| Ideal disc, CAV, 144.83–145 mm | `ntsc_round_trip_cav_outer.yaml` | `ld-decode --NTSC` | `ff4cb4b70c7c341446cf3a993f5a7a87a5c5b37280ed61b594492aeac370a018` |
+| Ideal disc, CLV, 10.1 m/s from 55 mm | `ntsc_round_trip_clv.yaml` | `ld-decode --NTSC` | `8495347452097ce310c68c3a5f6772a036e86402a7125c7b89fccf75f76e7274` |
 
 **Two decoders.** Every RF is decoded by the pinned ld-decode and by
 `scripts/reference_demod.py`, a demodulator written from IEC 60857 alone.
@@ -214,51 +215,47 @@ repeats one or changes field order. Lead-in frames are scored on V1–V3 only,
 and programme frames on everything, so "frames outside" counts out of 49.
 The reference decoder writes all 100 frames.
 
-**Converter clipping.** ld-creator reports clipped RF samples on two disc
-runs. At CAV 55 mm, 91 samples clip, all on the broad-pulse lines (4–6,
-267–269) 5–7 µs after 0H: the colour burst that `laserdisc.vbi_burst` keeps
-there reaches −60 IRE, below sync tip, and the lowest carriers come out
-largest, as the [S13](disc-model/s13-rf-capture.md) level rule says. On CLV,
-869 samples clip, also at the dark side of pre-emphasised transitions in the
-VBI codes and the picture. The CAV 145 mm run does not clip. Every VBI code
-still decodes exactly; the headroom question is an S13 open item.
+**Capture level.** Each disc run measures its captured RF in a first pass
+and scales the peak-to-peak to 75 % of the converter's range, as the DdD
+guide sets a capture up ([S13](disc-model/s13-rf-capture.md), "Level"). No
+run clips.
 
 **Summary** (verdict, with the mean in the measurement's unit):
 
 | # | Threshold | ld-decode, Carrier | ld-decode, CAV 55 mm | ld-decode, CAV 145 mm | ld-decode, CLV | Reference, carrier | Reference, CAV 145 mm (DdD) |
 |---|-----------|---|---|---|---|---|---|
-| L1 | ±1 IRE | confirmed (+0.05) | confirmed (+0.06) | confirmed (+0.06) | confirmed (+0.06) | confirmed (−0.00) | confirmed (+0.01) |
+| L1 | ±1 IRE | confirmed (+0.05) | confirmed (+0.06) | confirmed (+0.06) | confirmed (+0.06) | confirmed (−0.00) | confirmed (+0.00) |
 | L2 | ±1 IRE | confirmed (+0.04) | confirmed (+0.05) | confirmed (+0.04) | confirmed (+0.05) | confirmed (−0.00) | confirmed (−0.00) |
 | L3b | ±1 IRE | confirmed (+0.04) | confirmed (+0.06) | confirmed (+0.05) | confirmed (+0.06) | confirmed (+0.00) | confirmed (−0.00) |
-| L3l | ±1 IRE | confirmed (+0.05) | confirmed (+0.06) | confirmed (+0.06) | confirmed (+0.06) | confirmed (+0.00) | confirmed (−0.00) |
-| L4 | ±1 IRE | confirmed (+0.06) | confirmed (+0.07) | confirmed (+0.06) | confirmed (+0.06) | confirmed (+0.00) | confirmed (−0.00) |
-| L5 | ±1 IRE | confirmed (+0.07) | confirmed (+0.07) | confirmed (+0.07) | confirmed (+0.07) | confirmed (+0.01) | confirmed (−0.01) |
-| C1 | ±2 % | refuted (+15.60) | refuted (+5.61) | refuted (+5.83) | refuted (+5.14) | confirmed (+0.10) | refuted (−18.55) |
-| C2 | ±1 deg | refuted (+1.97) | refuted (+1.21) | confirmed (−0.80) | refuted (+1.51) | confirmed (+0.04) | refuted (−2.80) |
-| C3a | ±2 % | refuted (+14.99) | refuted (+7.04) | refuted (+8.29) | refuted (+6.38) | confirmed (+0.07) | refuted (−17.92) |
-| C3p | ±1 deg | refuted (+1.37) | refuted (+1.15) | refuted (−0.24) | refuted (+1.23) | confirmed (+0.10) | refuted (−1.62) |
-| F1 0.5 | ±0.5 dB | confirmed (+0.09) | confirmed (−0.01) | confirmed (+0.03) | confirmed (−0.01) | confirmed (+0.00) | confirmed (−0.06) |
-| F1 1 | ±0.5 dB | confirmed (+0.16) | confirmed (−0.19) | confirmed (−0.09) | confirmed (−0.19) | confirmed (+0.01) | confirmed (−0.26) |
-| F1 2 | ±0.5 dB | confirmed (+0.15) | confirmed (−0.35) | confirmed (−0.23) | confirmed (−0.34) | confirmed (+0.01) | refuted (−0.99) |
-| F1 3 | ±0.5 dB | refuted (+1.02) | confirmed (−0.18) | confirmed (−0.12) | confirmed (−0.21) | confirmed (+0.01) | refuted (−1.75) |
-| F1 3.58 | ±0.5 dB | refuted (+1.28) | refuted (+0.51) | refuted (+0.56) | confirmed (+0.42) | confirmed (+0.02) | refuted (−1.79) |
-| F1 4.2 | reported | +0.18 | +0.51 | +0.62 | +0.62 | +0.04 | −1.33 |
-| F2a | reported | +7.49 | +4.12 | +2.63 | +3.92 | +4.71 | −4.73 |
-| F2d | reported | −14.12 | −15.95 | −9.36 | −15.60 | −12.24 | +1.25 |
-| F3g | ±2 % | refuted (+13.25) | refuted (+5.92) | refuted (+5.64) | refuted (+4.98) | confirmed (−0.05) | refuted (−18.37) |
-| F3d | ±15 ns | refuted (+35.39) | confirmed (+3.95) | refuted (+17.38) | confirmed (+3.04) | confirmed (+2.91) | refuted (−15.30) |
-| T1 | reported | −7.45 | −3.48 | −6.29 | −3.40 | +0.57 | +55.16 |
-| T2 | reported | −8.69 | −4.12 | −7.68 | −4.00 | −1.61 | −2.50 |
+| L3l | ±1 IRE | confirmed (+0.05) | confirmed (+0.06) | confirmed (+0.06) | confirmed (+0.06) | confirmed (+0.00) | confirmed (+0.00) |
+| L4 | ±1 IRE | confirmed (+0.06) | confirmed (+0.07) | confirmed (+0.06) | confirmed (+0.07) | confirmed (+0.00) | confirmed (+0.00) |
+| L5 | ±1 IRE | confirmed (+0.07) | confirmed (+0.07) | confirmed (+0.07) | confirmed (+0.07) | confirmed (+0.01) | confirmed (−0.00) |
+| C1 | ±2 % | refuted (+15.60) | refuted (+9.46) | refuted (+11.31) | refuted (+6.87) | confirmed (+0.10) | refuted (−15.16) |
+| C2 | ±1 deg | refuted (+1.97) | refuted (+0.77) | refuted (+0.86) | refuted (+0.92) | confirmed (+0.04) | refuted (−2.08) |
+| C3a | ±2 % | refuted (+14.99) | refuted (+10.98) | refuted (+12.05) | refuted (+9.57) | confirmed (+0.07) | refuted (−15.26) |
+| C3p | ±1 deg | refuted (+1.37) | refuted (+0.84) | refuted (+0.86) | refuted (+0.88) | confirmed (+0.10) | refuted (−1.10) |
+| F1 0.5 | ±0.5 dB | confirmed (+0.09) | confirmed (+0.02) | confirmed (+0.03) | confirmed (+0.02) | confirmed (+0.00) | confirmed (−0.07) |
+| F1 1 | ±0.5 dB | confirmed (+0.16) | confirmed (−0.07) | confirmed (−0.07) | confirmed (−0.07) | confirmed (+0.01) | confirmed (−0.27) |
+| F1 2 | ±0.5 dB | confirmed (+0.15) | confirmed (−0.20) | confirmed (−0.17) | confirmed (−0.19) | confirmed (+0.01) | refuted (−0.89) |
+| F1 3 | ±0.5 dB | refuted (+1.02) | confirmed (+0.33) | confirmed (+0.23) | confirmed (+0.29) | confirmed (+0.01) | refuted (−1.45) |
+| F1 3.58 | ±0.5 dB | refuted (+1.28) | refuted (+0.85) | refuted (+0.91) | refuted (+0.62) | confirmed (+0.02) | refuted (−1.49) |
+| F1 4.2 | reported | +0.18 | +0.61 | +0.82 | +0.64 | +0.04 | −1.21 |
+| F2a | reported | +7.49 | +7.85 | +4.94 | +7.22 | +4.71 | −2.97 |
+| F2d | reported | −14.12 | −20.90 | −13.60 | −19.89 | −12.24 | −2.47 |
+| F3g | ±2 % | refuted (+13.25) | refuted (+10.02) | refuted (+9.42) | refuted (+7.90) | confirmed (−0.05) | refuted (−15.67) |
+| F3d | ±15 ns | refuted (+35.39) | refuted (+12.77) | refuted (+17.43) | refuted (+13.43) | confirmed (+2.91) | refuted (−16.82) |
+| T1 | reported | −7.45 | −4.09 | −4.95 | −4.04 | +0.57 | +59.43 |
+| T2 | reported | −8.69 | −4.80 | −5.91 | −4.69 | −1.61 | +0.94 |
 | V1 | ±0 lines | confirmed (0) | confirmed (0) | confirmed (0) | confirmed (0) | confirmed (0) | confirmed (0) |
 | V2 | ±0 lines | confirmed (0) | confirmed (0) | confirmed (0) | confirmed (0) | confirmed (0) | confirmed (0) |
 | V3 | ±0 lines | confirmed (0) | confirmed (0) | confirmed (0) | confirmed (0) | confirmed (0) | confirmed (0) |
-| P1 | reported | +2.16 | +1.37 | +1.54 | +1.27 | +0.80 | +12.34 |
+| P1 | reported | +2.16 | +1.57 | +1.61 | +1.44 | +0.80 | +12.53 |
 
 ld-decode recovers the levels (L1–L5) and the VBI codes (V1–V3) on every
-baseline, within 0.14 IRE and with every code exact. Its chroma
-measurements (C1, C3a, C3p, F3g) are refuted on every baseline. The reference
-decoder confirms every judged measurement on the carrier diagnostic, so the
-FM signal carries the truth by the standard. 0H (T1) and SC/H (T2) are
+baseline, within 0.14 IRE and with every code exact. Its chroma measurements
+(C1, C3a, C3p, F3g) are refuted on every baseline. The reference decoder
+confirms every judged measurement on the carrier diagnostic, so the FM
+signal carries the truth by the standard. 0H (T1) and SC/H (T2) are
 reported.
 
 #### Carrier diagnostic
@@ -330,60 +327,60 @@ ld-decode command: `ld-decode --NTSC cav_inner.s16 cav_inner_decoded`. Verdict: 
 
 | # | Measurement | Unit | Threshold | Min | Mean | Max | Frames outside | Verdict |
 |---|-------------|------|-----------|-----|------|-----|----------------|---------|
-| L1 | Blanking level (back porch), all normal-sync lines | IRE | ±1 | -0.045 | +0.057 | +0.134 | 0 | confirmed |
-| L2 | Sync tip level, all normal-sync lines | IRE | ±1 | +0.010 | +0.046 | +0.084 | 0 | confirmed |
-| L3b | VIRS black reference, lines 19/282 | IRE | ±1 | +0.039 | +0.057 | +0.068 | 0 | confirmed |
-| L3l | VIRS luminance reference, lines 19/282 | IRE | ±1 | +0.053 | +0.062 | +0.075 | 0 | confirmed |
-| L4 | NTC-7 white bar, line 20 | IRE | ±1 | +0.058 | +0.066 | +0.074 | 0 | confirmed |
-| L5 | NTC-7 staircase treads, line 20 | IRE | ±1 | -0.022 | +0.067 | +0.121 | 0 | confirmed |
-| C1 | VIRS chroma amplitude, decoded/truth − 1 | % | ±2 | +4.192 | +5.605 | +6.403 | 49 | refuted |
-| C2 | VIRS chroma phase relative to burst | deg | ±1 | +0.831 | +1.207 | +1.523 | 48 | refuted |
-| C3a | Staircase chroma amplitude (DG), decoded/truth − 1 | % | ±2 | +3.737 | +7.036 | +14.204 | 49 | refuted |
-| C3p | Staircase chroma phase (DP) relative to burst | deg | ±1 | -0.551 | +1.153 | +2.397 | 49 | refuted |
-| F1 0.5 | Multiburst 0.5 MHz, line 283 | dB | ±0.5 | -0.020 | -0.011 | -0.003 | 0 | confirmed |
-| F1 1 | Multiburst 1 MHz, line 283 | dB | ±0.5 | -0.209 | -0.192 | -0.177 | 0 | confirmed |
-| F1 2 | Multiburst 2 MHz, line 283 | dB | ±0.5 | -0.371 | -0.353 | -0.335 | 0 | confirmed |
-| F1 3 | Multiburst 3 MHz, line 283 | dB | ±0.5 | -0.202 | -0.179 | -0.134 | 0 | confirmed |
-| F1 3.58 | Multiburst 3.58 MHz, line 283 | dB | ±0.5 | +0.488 | +0.513 | +0.543 | 40 | refuted |
-| F1 4.2 | Multiburst 4.2 MHz, line 283 | dB | reported | +0.481 | +0.514 | +0.538 | — | reported |
-| F2a | 2T pulse amplitude, decoded/truth − 1 | % | reported | +3.884 | +4.118 | +4.443 | — | reported |
-| F2d | 2T pulse half-amplitude duration difference | ns | reported | -16.429 | -15.953 | -15.444 | — | reported |
-| F3g | 12.5T chroma-to-luma gain, decoded/truth − 1 | % | ±2 | +5.501 | +5.918 | +6.525 | 49 | refuted |
-| F3d | 12.5T chroma-to-luma delay difference | ns | ±15 | +2.069 | +3.948 | +6.525 | 0 | confirmed |
-| T1 | 0H position difference, all normal-sync lines | ns | reported | -4.752 | -3.479 | -2.386 | — | reported |
-| T2 | Burst phase at 0H (SC/H) difference | deg | reported | -5.791 | -4.124 | -2.739 | — | reported |
+| L1 | Blanking level (back porch), all normal-sync lines | IRE | ±1 | -0.030 | +0.056 | +0.134 | 0 | confirmed |
+| L2 | Sync tip level, all normal-sync lines | IRE | ±1 | +0.010 | +0.046 | +0.079 | 0 | confirmed |
+| L3b | VIRS black reference, lines 19/282 | IRE | ±1 | +0.042 | +0.058 | +0.072 | 0 | confirmed |
+| L3l | VIRS luminance reference, lines 19/282 | IRE | ±1 | +0.051 | +0.063 | +0.077 | 0 | confirmed |
+| L4 | NTC-7 white bar, line 20 | IRE | ±1 | +0.057 | +0.068 | +0.074 | 0 | confirmed |
+| L5 | NTC-7 staircase treads, line 20 | IRE | ±1 | -0.011 | +0.066 | +0.128 | 0 | confirmed |
+| C1 | VIRS chroma amplitude, decoded/truth − 1 | % | ±2 | +9.145 | +9.458 | +9.752 | 49 | refuted |
+| C2 | VIRS chroma phase relative to burst | deg | ±1 | +0.414 | +0.770 | +1.192 | 5 | refuted |
+| C3a | Staircase chroma amplitude (DG), decoded/truth − 1 | % | ±2 | +8.520 | +10.985 | +14.360 | 49 | refuted |
+| C3p | Staircase chroma phase (DP) relative to burst | deg | ±1 | -0.719 | +0.837 | +2.400 | 49 | refuted |
+| F1 0.5 | Multiburst 0.5 MHz, line 283 | dB | ±0.5 | +0.010 | +0.021 | +0.034 | 0 | confirmed |
+| F1 1 | Multiburst 1 MHz, line 283 | dB | ±0.5 | -0.081 | -0.066 | -0.053 | 0 | confirmed |
+| F1 2 | Multiburst 2 MHz, line 283 | dB | ±0.5 | -0.234 | -0.200 | -0.176 | 0 | confirmed |
+| F1 3 | Multiburst 3 MHz, line 283 | dB | ±0.5 | +0.288 | +0.332 | +0.366 | 0 | confirmed |
+| F1 3.58 | Multiburst 3.58 MHz, line 283 | dB | ±0.5 | +0.809 | +0.850 | +0.900 | 49 | refuted |
+| F1 4.2 | Multiburst 4.2 MHz, line 283 | dB | reported | +0.580 | +0.615 | +0.640 | — | reported |
+| F2a | 2T pulse amplitude, decoded/truth − 1 | % | reported | +7.455 | +7.846 | +8.181 | — | reported |
+| F2d | 2T pulse half-amplitude duration difference | ns | reported | -21.401 | -20.900 | -20.327 | — | reported |
+| F3g | 12.5T chroma-to-luma gain, decoded/truth − 1 | % | ±2 | +9.481 | +10.024 | +10.547 | 49 | refuted |
+| F3d | 12.5T chroma-to-luma delay difference | ns | ±15 | +10.130 | +12.774 | +16.368 | 3 | refuted |
+| T1 | 0H position difference, all normal-sync lines | ns | reported | -5.690 | -4.085 | -1.118 | — | reported |
+| T2 | Burst phase at 0H (SC/H) difference | deg | reported | -6.709 | -4.795 | -0.882 | — | reported |
 | V1 | FM codes, lines 10/273: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
 | V2 | White flags, lines 11/274: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
 | V3 | Biphase codes, lines 16-18/279-281: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
-| P1 | Active picture RMS difference | IRE | reported | +0.117 | +1.372 | +3.036 | — | reported |
+| P1 | Active picture RMS difference | IRE | reported | +0.139 | +1.565 | +3.037 | — | reported |
 | # | Measurement | Unit | Threshold | Min | Mean | Max | Frames outside | Verdict |
 |---|-------------|------|-----------|-----|------|-----|----------------|---------|
-| L1 | Blanking level (back porch), all normal-sync lines | IRE | ±1 | -0.238 | +0.019 | +0.298 | 0 | confirmed |
-| L2 | Sync tip level, all normal-sync lines | IRE | ±1 | -0.084 | +0.001 | +0.149 | 0 | confirmed |
-| L3b | VIRS black reference, lines 19/282 | IRE | ±1 | -0.014 | +0.000 | +0.012 | 0 | confirmed |
-| L3l | VIRS luminance reference, lines 19/282 | IRE | ±1 | -0.012 | +0.002 | +0.019 | 0 | confirmed |
-| L4 | NTC-7 white bar, line 20 | IRE | ±1 | -0.006 | +0.002 | +0.016 | 0 | confirmed |
-| L5 | NTC-7 staircase treads, line 20 | IRE | ±1 | -0.121 | -0.011 | +0.156 | 0 | confirmed |
-| C1 | VIRS chroma amplitude, decoded/truth − 1 | % | ±2 | -21.307 | -19.689 | -18.151 | 50 | refuted |
-| C2 | VIRS chroma phase relative to burst | deg | ±1 | -5.160 | -2.792 | -0.092 | 50 | refuted |
-| C3a | Staircase chroma amplitude (DG), decoded/truth − 1 | % | ±2 | -67.424 | -28.334 | -8.594 | 50 | refuted |
-| C3p | Staircase chroma phase (DP) relative to burst | deg | ±1 | -2.980 | +1.209 | +14.398 | 50 | refuted |
-| F1 0.5 | Multiburst 0.5 MHz, line 283 | dB | ±0.5 | -0.074 | -0.059 | -0.039 | 0 | confirmed |
-| F1 1 | Multiburst 1 MHz, line 283 | dB | ±0.5 | -0.284 | -0.253 | -0.229 | 0 | confirmed |
-| F1 2 | Multiburst 2 MHz, line 283 | dB | ±0.5 | -1.062 | -0.998 | -0.946 | 50 | refuted |
-| F1 3 | Multiburst 3 MHz, line 283 | dB | ±0.5 | -1.802 | -1.697 | -1.555 | 50 | refuted |
-| F1 3.58 | Multiburst 3.58 MHz, line 283 | dB | ±0.5 | -2.380 | -2.074 | -1.793 | 50 | refuted |
-| F1 4.2 | Multiburst 4.2 MHz, line 283 | dB | reported | -8.103 | -7.917 | -7.764 | — | reported |
-| F2a | 2T pulse amplitude, decoded/truth − 1 | % | reported | -12.076 | -11.045 | -10.059 | — | reported |
-| F2d | 2T pulse half-amplitude duration difference | ns | reported | +21.968 | +25.200 | +28.897 | — | reported |
-| F3g | 12.5T chroma-to-luma gain, decoded/truth − 1 | % | ±2 | -25.544 | -23.508 | -21.995 | 50 | refuted |
-| F3d | 12.5T chroma-to-luma delay difference | ns | ±15 | -36.256 | -21.730 | -8.567 | 40 | refuted |
-| T1 | 0H position difference, all normal-sync lines | ns | reported | +45.884 | +54.700 | +60.774 | — | reported |
-| T2 | Burst phase at 0H (SC/H) difference | deg | reported | -13.960 | -3.082 | +4.316 | — | reported |
+| L1 | Blanking level (back porch), all normal-sync lines | IRE | ±1 | -0.253 | +0.013 | +0.283 | 0 | confirmed |
+| L2 | Sync tip level, all normal-sync lines | IRE | ±1 | -0.084 | +0.001 | +0.268 | 0 | confirmed |
+| L3b | VIRS black reference, lines 19/282 | IRE | ±1 | -0.021 | -0.000 | +0.018 | 0 | confirmed |
+| L3l | VIRS luminance reference, lines 19/282 | IRE | ±1 | -0.013 | +0.000 | +0.016 | 0 | confirmed |
+| L4 | NTC-7 white bar, line 20 | IRE | ±1 | -0.011 | +0.002 | +0.015 | 0 | confirmed |
+| L5 | NTC-7 staircase treads, line 20 | IRE | ±1 | -0.126 | -0.011 | +0.201 | 0 | confirmed |
+| C1 | VIRS chroma amplitude, decoded/truth − 1 | % | ±2 | -18.699 | -16.085 | -13.866 | 50 | refuted |
+| C2 | VIRS chroma phase relative to burst | deg | ±1 | -4.982 | -2.090 | +0.878 | 49 | refuted |
+| C3a | Staircase chroma amplitude (DG), decoded/truth − 1 | % | ±2 | -60.366 | -24.748 | -3.943 | 50 | refuted |
+| C3p | Staircase chroma phase (DP) relative to burst | deg | ±1 | -7.068 | -0.119 | +9.233 | 50 | refuted |
+| F1 0.5 | Multiburst 0.5 MHz, line 283 | dB | ±0.5 | -0.090 | -0.071 | -0.055 | 0 | confirmed |
+| F1 1 | Multiburst 1 MHz, line 283 | dB | ±0.5 | -0.295 | -0.264 | -0.232 | 0 | confirmed |
+| F1 2 | Multiburst 2 MHz, line 283 | dB | ±0.5 | -0.969 | -0.908 | -0.827 | 50 | refuted |
+| F1 3 | Multiburst 3 MHz, line 283 | dB | ±0.5 | -1.624 | -1.415 | -1.231 | 50 | refuted |
+| F1 3.58 | Multiburst 3.58 MHz, line 283 | dB | ±0.5 | -2.014 | -1.659 | -1.213 | 50 | refuted |
+| F1 4.2 | Multiburst 4.2 MHz, line 283 | dB | reported | -6.713 | -6.526 | -6.356 | — | reported |
+| F2a | 2T pulse amplitude, decoded/truth − 1 | % | reported | -10.589 | -9.154 | -7.963 | — | reported |
+| F2d | 2T pulse half-amplitude duration difference | ns | reported | +14.851 | +18.681 | +23.083 | — | reported |
+| F3g | 12.5T chroma-to-luma gain, decoded/truth − 1 | % | ±2 | -23.245 | -19.890 | -17.242 | 50 | refuted |
+| F3d | 12.5T chroma-to-luma delay difference | ns | ±15 | -37.753 | -18.993 | +7.527 | 35 | refuted |
+| T1 | 0H position difference, all normal-sync lines | ns | reported | +48.843 | +59.206 | +66.420 | — | reported |
+| T2 | Burst phase at 0H (SC/H) difference | deg | reported | -14.221 | +0.654 | +11.374 | — | reported |
 | V1 | FM codes, lines 10/273: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
 | V2 | White flags, lines 11/274: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
 | V3 | Biphase codes, lines 16-18/279-281: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
-| P1 | Active picture RMS difference | IRE | reported | +0.439 | +11.625 | +26.284 | — | reported |
+| P1 | Active picture RMS difference | IRE | reported | +0.598 | +12.154 | +27.152 | — | reported |
 
 Discontinuities: lead-in frames 0-1 not decoded (before the first decoded frame); pictures 50-50 not decoded (after the last decoded frame).
 
@@ -393,60 +390,60 @@ ld-decode command: `ld-decode --NTSC cav_outer.s16 cav_outer_decoded`. Verdict: 
 
 | # | Measurement | Unit | Threshold | Min | Mean | Max | Frames outside | Verdict |
 |---|-------------|------|-----------|-----|------|-----|----------------|---------|
-| L1 | Blanking level (back porch), all normal-sync lines | IRE | ±1 | -0.015 | +0.061 | +0.119 | 0 | confirmed |
-| L2 | Sync tip level, all normal-sync lines | IRE | ±1 | +0.010 | +0.045 | +0.079 | 0 | confirmed |
-| L3b | VIRS black reference, lines 19/282 | IRE | ±1 | +0.035 | +0.051 | +0.062 | 0 | confirmed |
-| L3l | VIRS luminance reference, lines 19/282 | IRE | ±1 | +0.043 | +0.056 | +0.068 | 0 | confirmed |
-| L4 | NTC-7 white bar, line 20 | IRE | ±1 | +0.054 | +0.063 | +0.074 | 0 | confirmed |
-| L5 | NTC-7 staircase treads, line 20 | IRE | ±1 | +0.011 | +0.071 | +0.128 | 0 | confirmed |
-| C1 | VIRS chroma amplitude, decoded/truth − 1 | % | ±2 | +5.685 | +5.829 | +5.953 | 49 | refuted |
-| C2 | VIRS chroma phase relative to burst | deg | ±1 | -0.954 | -0.803 | -0.633 | 0 | confirmed |
-| C3a | Staircase chroma amplitude (DG), decoded/truth − 1 | % | ±2 | +5.296 | +8.288 | +13.949 | 49 | refuted |
-| C3p | Staircase chroma phase (DP) relative to burst | deg | ±1 | -2.873 | -0.243 | +1.374 | 49 | refuted |
-| F1 0.5 | Multiburst 0.5 MHz, line 283 | dB | ±0.5 | +0.018 | +0.025 | +0.035 | 0 | confirmed |
-| F1 1 | Multiburst 1 MHz, line 283 | dB | ±0.5 | -0.100 | -0.086 | -0.072 | 0 | confirmed |
-| F1 2 | Multiburst 2 MHz, line 283 | dB | ±0.5 | -0.242 | -0.227 | -0.215 | 0 | confirmed |
-| F1 3 | Multiburst 3 MHz, line 283 | dB | ±0.5 | -0.142 | -0.123 | -0.103 | 0 | confirmed |
-| F1 3.58 | Multiburst 3.58 MHz, line 283 | dB | ±0.5 | +0.537 | +0.557 | +0.575 | 49 | refuted |
-| F1 4.2 | Multiburst 4.2 MHz, line 283 | dB | reported | +0.598 | +0.620 | +0.648 | — | reported |
-| F2a | 2T pulse amplitude, decoded/truth − 1 | % | reported | +2.444 | +2.631 | +2.824 | — | reported |
-| F2d | 2T pulse half-amplitude duration difference | ns | reported | -9.843 | -9.362 | -8.890 | — | reported |
-| F3g | 12.5T chroma-to-luma gain, decoded/truth − 1 | % | ±2 | +5.201 | +5.644 | +6.175 | 49 | refuted |
-| F3d | 12.5T chroma-to-luma delay difference | ns | ±15 | +15.975 | +17.382 | +19.001 | 49 | refuted |
-| T1 | 0H position difference, all normal-sync lines | ns | reported | -7.296 | -6.295 | -5.372 | — | reported |
-| T2 | Burst phase at 0H (SC/H) difference | deg | reported | -8.980 | -7.679 | -6.583 | — | reported |
+| L1 | Blanking level (back porch), all normal-sync lines | IRE | ±1 | -0.015 | +0.058 | +0.119 | 0 | confirmed |
+| L2 | Sync tip level, all normal-sync lines | IRE | ±1 | +0.010 | +0.044 | +0.079 | 0 | confirmed |
+| L3b | VIRS black reference, lines 19/282 | IRE | ±1 | +0.035 | +0.054 | +0.069 | 0 | confirmed |
+| L3l | VIRS luminance reference, lines 19/282 | IRE | ±1 | +0.047 | +0.060 | +0.068 | 0 | confirmed |
+| L4 | NTC-7 white bar, line 20 | IRE | ±1 | +0.056 | +0.064 | +0.071 | 0 | confirmed |
+| L5 | NTC-7 staircase treads, line 20 | IRE | ±1 | +0.011 | +0.070 | +0.121 | 0 | confirmed |
+| C1 | VIRS chroma amplitude, decoded/truth − 1 | % | ±2 | +11.206 | +11.314 | +11.441 | 49 | refuted |
+| C2 | VIRS chroma phase relative to burst | deg | ±1 | +0.676 | +0.865 | +1.074 | 7 | refuted |
+| C3a | Staircase chroma amplitude (DG), decoded/truth − 1 | % | ±2 | +10.077 | +12.046 | +14.246 | 49 | refuted |
+| C3p | Staircase chroma phase (DP) relative to burst | deg | ±1 | -0.506 | +0.864 | +1.779 | 49 | refuted |
+| F1 0.5 | Multiburst 0.5 MHz, line 283 | dB | ±0.5 | +0.019 | +0.025 | +0.032 | 0 | confirmed |
+| F1 1 | Multiburst 1 MHz, line 283 | dB | ±0.5 | -0.079 | -0.068 | -0.055 | 0 | confirmed |
+| F1 2 | Multiburst 2 MHz, line 283 | dB | ±0.5 | -0.184 | -0.170 | -0.155 | 0 | confirmed |
+| F1 3 | Multiburst 3 MHz, line 283 | dB | ±0.5 | +0.218 | +0.232 | +0.251 | 0 | confirmed |
+| F1 3.58 | Multiburst 3.58 MHz, line 283 | dB | ±0.5 | +0.893 | +0.911 | +0.932 | 49 | refuted |
+| F1 4.2 | Multiburst 4.2 MHz, line 283 | dB | reported | +0.795 | +0.816 | +0.837 | — | reported |
+| F2a | 2T pulse amplitude, decoded/truth − 1 | % | reported | +4.760 | +4.939 | +5.151 | — | reported |
+| F2d | 2T pulse half-amplitude duration difference | ns | reported | -14.114 | -13.598 | -13.022 | — | reported |
+| F3g | 12.5T chroma-to-luma gain, decoded/truth − 1 | % | ±2 | +8.955 | +9.425 | +9.837 | 49 | refuted |
+| F3d | 12.5T chroma-to-luma delay difference | ns | ±15 | +15.788 | +17.432 | +19.295 | 49 | refuted |
+| T1 | 0H position difference, all normal-sync lines | ns | reported | -5.993 | -4.950 | -3.986 | — | reported |
+| T2 | Burst phase at 0H (SC/H) difference | deg | reported | -7.071 | -5.911 | -4.764 | — | reported |
 | V1 | FM codes, lines 10/273: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
 | V2 | White flags, lines 11/274: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
 | V3 | Biphase codes, lines 16-18/279-281: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
-| P1 | Active picture RMS difference | IRE | reported | +0.100 | +1.537 | +4.024 | — | reported |
+| P1 | Active picture RMS difference | IRE | reported | +0.103 | +1.615 | +3.414 | — | reported |
 | # | Measurement | Unit | Threshold | Min | Mean | Max | Frames outside | Verdict |
 |---|-------------|------|-----------|-----|------|-----|----------------|---------|
-| L1 | Blanking level (back porch), all normal-sync lines | IRE | ±1 | -0.045 | +0.005 | +0.060 | 0 | confirmed |
-| L2 | Sync tip level, all normal-sync lines | IRE | ±1 | -0.030 | -0.000 | +0.030 | 0 | confirmed |
-| L3b | VIRS black reference, lines 19/282 | IRE | ±1 | -0.008 | -0.000 | +0.010 | 0 | confirmed |
-| L3l | VIRS luminance reference, lines 19/282 | IRE | ±1 | -0.006 | -0.000 | +0.008 | 0 | confirmed |
-| L4 | NTC-7 white bar, line 20 | IRE | ±1 | -0.007 | -0.000 | +0.005 | 0 | confirmed |
-| L5 | NTC-7 staircase treads, line 20 | IRE | ±1 | -0.045 | -0.008 | +0.020 | 0 | confirmed |
-| C1 | VIRS chroma amplitude, decoded/truth − 1 | % | ±2 | -18.641 | -18.545 | -18.460 | 50 | refuted |
-| C2 | VIRS chroma phase relative to burst | deg | ±1 | -3.027 | -2.799 | -2.562 | 50 | refuted |
-| C3a | Staircase chroma amplitude (DG), decoded/truth − 1 | % | ±2 | -19.455 | -17.920 | -15.997 | 50 | refuted |
-| C3p | Staircase chroma phase (DP) relative to burst | deg | ±1 | -4.657 | -1.625 | +0.995 | 50 | refuted |
-| F1 0.5 | Multiburst 0.5 MHz, line 283 | dB | ±0.5 | -0.066 | -0.058 | -0.053 | 0 | confirmed |
-| F1 1 | Multiburst 1 MHz, line 283 | dB | ±0.5 | -0.268 | -0.257 | -0.246 | 0 | confirmed |
-| F1 2 | Multiburst 2 MHz, line 283 | dB | ±0.5 | -1.009 | -0.995 | -0.975 | 50 | refuted |
-| F1 3 | Multiburst 3 MHz, line 283 | dB | ±0.5 | -1.762 | -1.746 | -1.725 | 50 | refuted |
-| F1 3.58 | Multiburst 3.58 MHz, line 283 | dB | ±0.5 | -1.815 | -1.793 | -1.778 | 50 | refuted |
-| F1 4.2 | Multiburst 4.2 MHz, line 283 | dB | reported | -1.353 | -1.326 | -1.297 | — | reported |
-| F2a | 2T pulse amplitude, decoded/truth − 1 | % | reported | -4.895 | -4.732 | -4.523 | — | reported |
-| F2d | 2T pulse half-amplitude duration difference | ns | reported | +0.533 | +1.253 | +1.860 | — | reported |
-| F3g | 12.5T chroma-to-luma gain, decoded/truth − 1 | % | ±2 | -18.900 | -18.371 | -17.784 | 50 | refuted |
-| F3d | 12.5T chroma-to-luma delay difference | ns | ±15 | -17.525 | -15.302 | -13.026 | 30 | refuted |
-| T1 | 0H position difference, all normal-sync lines | ns | reported | +54.279 | +55.157 | +56.075 | — | reported |
-| T2 | Burst phase at 0H (SC/H) difference | deg | reported | -3.734 | -2.503 | -1.216 | — | reported |
+| L1 | Blanking level (back porch), all normal-sync lines | IRE | ±1 | -0.074 | +0.003 | +0.060 | 0 | confirmed |
+| L2 | Sync tip level, all normal-sync lines | IRE | ±1 | -0.040 | -0.002 | +0.030 | 0 | confirmed |
+| L3b | VIRS black reference, lines 19/282 | IRE | ±1 | -0.010 | -0.000 | +0.010 | 0 | confirmed |
+| L3l | VIRS luminance reference, lines 19/282 | IRE | ±1 | -0.008 | +0.001 | +0.010 | 0 | confirmed |
+| L4 | NTC-7 white bar, line 20 | IRE | ±1 | -0.010 | +0.000 | +0.010 | 0 | confirmed |
+| L5 | NTC-7 staircase treads, line 20 | IRE | ±1 | -0.030 | -0.002 | +0.033 | 0 | confirmed |
+| C1 | VIRS chroma amplitude, decoded/truth − 1 | % | ±2 | -15.234 | -15.161 | -15.089 | 50 | refuted |
+| C2 | VIRS chroma phase relative to burst | deg | ±1 | -2.387 | -2.082 | -1.819 | 50 | refuted |
+| C3a | Staircase chroma amplitude (DG), decoded/truth − 1 | % | ±2 | -16.591 | -15.263 | -12.839 | 50 | refuted |
+| C3p | Staircase chroma phase (DP) relative to burst | deg | ±1 | -3.761 | -1.097 | +1.181 | 50 | refuted |
+| F1 0.5 | Multiburst 0.5 MHz, line 283 | dB | ±0.5 | -0.078 | -0.069 | -0.061 | 0 | confirmed |
+| F1 1 | Multiburst 1 MHz, line 283 | dB | ±0.5 | -0.279 | -0.269 | -0.258 | 0 | confirmed |
+| F1 2 | Multiburst 2 MHz, line 283 | dB | ±0.5 | -0.912 | -0.895 | -0.883 | 50 | refuted |
+| F1 3 | Multiburst 3 MHz, line 283 | dB | ±0.5 | -1.468 | -1.449 | -1.426 | 50 | refuted |
+| F1 3.58 | Multiburst 3.58 MHz, line 283 | dB | ±0.5 | -1.509 | -1.486 | -1.466 | 50 | refuted |
+| F1 4.2 | Multiburst 4.2 MHz, line 283 | dB | reported | -1.239 | -1.209 | -1.176 | — | reported |
+| F2a | 2T pulse amplitude, decoded/truth − 1 | % | reported | -3.121 | -2.971 | -2.717 | — | reported |
+| F2d | 2T pulse half-amplitude duration difference | ns | reported | -3.080 | -2.474 | -1.834 | — | reported |
+| F3g | 12.5T chroma-to-luma gain, decoded/truth − 1 | % | ±2 | -16.119 | -15.665 | -15.223 | 50 | refuted |
+| F3d | 12.5T chroma-to-luma delay difference | ns | ±15 | -18.924 | -16.823 | -14.284 | 46 | refuted |
+| T1 | 0H position difference, all normal-sync lines | ns | reported | +58.799 | +59.430 | +60.218 | — | reported |
+| T2 | Burst phase at 0H (SC/H) difference | deg | reported | -0.077 | +0.943 | +2.033 | — | reported |
 | V1 | FM codes, lines 10/273: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
 | V2 | White flags, lines 11/274: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
 | V3 | Biphase codes, lines 16-18/279-281: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
-| P1 | Active picture RMS difference | IRE | reported | +0.061 | +12.340 | +26.556 | — | reported |
+| P1 | Active picture RMS difference | IRE | reported | +0.068 | +12.534 | +27.382 | — | reported |
 
 Discontinuities: lead-in frames 0-1 not decoded (before the first decoded frame); pictures 50-50 not decoded (after the last decoded frame).
 
@@ -456,60 +453,60 @@ ld-decode command: `ld-decode --NTSC clv.s16 clv_decoded`. Verdict: **refuted**.
 
 | # | Measurement | Unit | Threshold | Min | Mean | Max | Frames outside | Verdict |
 |---|-------------|------|-----------|-----|------|-----|----------------|---------|
-| L1 | Blanking level (back porch), all normal-sync lines | IRE | ±1 | -0.074 | +0.057 | +0.134 | 0 | confirmed |
-| L2 | Sync tip level, all normal-sync lines | IRE | ±1 | -0.005 | +0.046 | +0.084 | 0 | confirmed |
-| L3b | VIRS black reference, lines 19/282 | IRE | ±1 | +0.042 | +0.057 | +0.069 | 0 | confirmed |
-| L3l | VIRS luminance reference, lines 19/282 | IRE | ±1 | +0.047 | +0.062 | +0.075 | 0 | confirmed |
-| L4 | NTC-7 white bar, line 20 | IRE | ±1 | +0.046 | +0.064 | +0.072 | 0 | confirmed |
-| L5 | NTC-7 staircase treads, line 20 | IRE | ±1 | -0.022 | +0.066 | +0.121 | 0 | confirmed |
-| C1 | VIRS chroma amplitude, decoded/truth − 1 | % | ±2 | +4.998 | +5.139 | +5.242 | 49 | refuted |
-| C2 | VIRS chroma phase relative to burst | deg | ±1 | +1.150 | +1.511 | +1.883 | 49 | refuted |
-| C3a | Staircase chroma amplitude (DG), decoded/truth − 1 | % | ±2 | +3.280 | +6.380 | +10.156 | 49 | refuted |
-| C3p | Staircase chroma phase (DP) relative to burst | deg | ±1 | -0.851 | +1.234 | +2.691 | 49 | refuted |
-| F1 0.5 | Multiburst 0.5 MHz, line 283 | dB | ±0.5 | -0.021 | -0.010 | -0.001 | 0 | confirmed |
-| F1 1 | Multiburst 1 MHz, line 283 | dB | ±0.5 | -0.204 | -0.195 | -0.184 | 0 | confirmed |
-| F1 2 | Multiburst 2 MHz, line 283 | dB | ±0.5 | -0.368 | -0.340 | -0.318 | 0 | confirmed |
-| F1 3 | Multiburst 3 MHz, line 283 | dB | ±0.5 | -0.247 | -0.210 | -0.181 | 0 | confirmed |
-| F1 3.58 | Multiburst 3.58 MHz, line 283 | dB | ±0.5 | +0.382 | +0.416 | +0.447 | 0 | confirmed |
-| F1 4.2 | Multiburst 4.2 MHz, line 283 | dB | reported | +0.600 | +0.616 | +0.630 | — | reported |
-| F2a | 2T pulse amplitude, decoded/truth − 1 | % | reported | +3.558 | +3.920 | +4.102 | — | reported |
-| F2d | 2T pulse half-amplitude duration difference | ns | reported | -15.944 | -15.604 | -15.013 | — | reported |
-| F3g | 12.5T chroma-to-luma gain, decoded/truth − 1 | % | ±2 | +4.663 | +4.982 | +5.250 | 49 | refuted |
-| F3d | 12.5T chroma-to-luma delay difference | ns | ±15 | +0.579 | +3.042 | +5.603 | 0 | confirmed |
-| T1 | 0H position difference, all normal-sync lines | ns | reported | -5.881 | -3.398 | -0.217 | — | reported |
-| T2 | Burst phase at 0H (SC/H) difference | deg | reported | -7.174 | -3.999 | +0.132 | — | reported |
+| L1 | Blanking level (back porch), all normal-sync lines | IRE | ±1 | -0.030 | +0.057 | +0.298 | 0 | confirmed |
+| L2 | Sync tip level, all normal-sync lines | IRE | ±1 | -0.010 | +0.046 | +0.084 | 0 | confirmed |
+| L3b | VIRS black reference, lines 19/282 | IRE | ±1 | +0.043 | +0.057 | +0.072 | 0 | confirmed |
+| L3l | VIRS luminance reference, lines 19/282 | IRE | ±1 | +0.051 | +0.063 | +0.076 | 0 | confirmed |
+| L4 | NTC-7 white bar, line 20 | IRE | ±1 | +0.056 | +0.068 | +0.080 | 0 | confirmed |
+| L5 | NTC-7 staircase treads, line 20 | IRE | ±1 | -0.011 | +0.068 | +0.134 | 0 | confirmed |
+| C1 | VIRS chroma amplitude, decoded/truth − 1 | % | ±2 | +6.759 | +6.870 | +6.963 | 49 | refuted |
+| C2 | VIRS chroma phase relative to burst | deg | ±1 | +0.271 | +0.919 | +1.364 | 27 | refuted |
+| C3a | Staircase chroma amplitude (DG), decoded/truth − 1 | % | ±2 | +5.319 | +9.574 | +14.990 | 49 | refuted |
+| C3p | Staircase chroma phase (DP) relative to burst | deg | ±1 | -0.769 | +0.876 | +2.385 | 49 | refuted |
+| F1 0.5 | Multiburst 0.5 MHz, line 283 | dB | ±0.5 | +0.013 | +0.023 | +0.034 | 0 | confirmed |
+| F1 1 | Multiburst 1 MHz, line 283 | dB | ±0.5 | -0.080 | -0.068 | -0.056 | 0 | confirmed |
+| F1 2 | Multiburst 2 MHz, line 283 | dB | ±0.5 | -0.214 | -0.190 | -0.163 | 0 | confirmed |
+| F1 3 | Multiburst 3 MHz, line 283 | dB | ±0.5 | +0.215 | +0.292 | +0.351 | 0 | confirmed |
+| F1 3.58 | Multiburst 3.58 MHz, line 283 | dB | ±0.5 | +0.570 | +0.619 | +0.660 | 49 | refuted |
+| F1 4.2 | Multiburst 4.2 MHz, line 283 | dB | reported | +0.613 | +0.636 | +0.652 | — | reported |
+| F2a | 2T pulse amplitude, decoded/truth − 1 | % | reported | +6.920 | +7.218 | +7.483 | — | reported |
+| F2d | 2T pulse half-amplitude duration difference | ns | reported | -20.340 | -19.887 | -19.202 | — | reported |
+| F3g | 12.5T chroma-to-luma gain, decoded/truth − 1 | % | ±2 | +7.383 | +7.897 | +8.474 | 49 | refuted |
+| F3d | 12.5T chroma-to-luma delay difference | ns | ±15 | +9.010 | +13.434 | +17.776 | 9 | refuted |
+| T1 | 0H position difference, all normal-sync lines | ns | reported | -11.412 | -4.045 | -2.218 | — | reported |
+| T2 | Burst phase at 0H (SC/H) difference | deg | reported | -14.139 | -4.695 | -2.201 | — | reported |
 | V1 | FM codes, lines 10/273: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
 | V2 | White flags, lines 11/274: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
 | V3 | Biphase codes, lines 16-18/279-281: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
-| P1 | Active picture RMS difference | IRE | reported | +0.124 | +1.274 | +3.001 | — | reported |
+| P1 | Active picture RMS difference | IRE | reported | +0.171 | +1.443 | +2.957 | — | reported |
 | # | Measurement | Unit | Threshold | Min | Mean | Max | Frames outside | Verdict |
 |---|-------------|------|-----------|-----|------|-----|----------------|---------|
-| L1 | Blanking level (back porch), all normal-sync lines | IRE | ±1 | -0.179 | +0.019 | +0.223 | 0 | confirmed |
-| L2 | Sync tip level, all normal-sync lines | IRE | ±1 | -0.069 | -0.004 | +0.069 | 0 | confirmed |
-| L3b | VIRS black reference, lines 19/282 | IRE | ±1 | -0.010 | +0.001 | +0.017 | 0 | confirmed |
-| L3l | VIRS luminance reference, lines 19/282 | IRE | ±1 | -0.008 | +0.000 | +0.013 | 0 | confirmed |
-| L4 | NTC-7 white bar, line 20 | IRE | ±1 | -0.004 | +0.004 | +0.013 | 0 | confirmed |
-| L5 | NTC-7 staircase treads, line 20 | IRE | ±1 | -0.171 | -0.047 | +0.038 | 0 | confirmed |
-| C1 | VIRS chroma amplitude, decoded/truth − 1 | % | ±2 | -61.854 | -61.771 | -61.679 | 50 | refuted |
-| C2 | VIRS chroma phase relative to burst | deg | ±1 | +10.025 | +11.906 | +14.276 | 50 | refuted |
-| C3a | Staircase chroma amplitude (DG), decoded/truth − 1 | % | ±2 | -61.834 | -38.980 | -13.376 | 50 | refuted |
-| C3p | Staircase chroma phase (DP) relative to burst | deg | ±1 | -6.844 | +3.244 | +15.537 | 50 | refuted |
-| F1 0.5 | Multiburst 0.5 MHz, line 283 | dB | ±0.5 | -0.083 | -0.059 | -0.047 | 0 | confirmed |
-| F1 1 | Multiburst 1 MHz, line 283 | dB | ±0.5 | -0.285 | -0.255 | -0.233 | 0 | confirmed |
-| F1 2 | Multiburst 2 MHz, line 283 | dB | ±0.5 | -1.063 | -1.020 | -0.973 | 50 | refuted |
-| F1 3 | Multiburst 3 MHz, line 283 | dB | ±0.5 | -1.883 | -1.741 | -1.593 | 50 | refuted |
-| F1 3.58 | Multiburst 3.58 MHz, line 283 | dB | ±0.5 | -6.455 | -5.987 | -5.661 | 50 | refuted |
-| F1 4.2 | Multiburst 4.2 MHz, line 283 | dB | reported | -8.262 | -8.169 | -8.051 | — | reported |
-| F2a | 2T pulse amplitude, decoded/truth − 1 | % | reported | -15.641 | -14.650 | -14.053 | — | reported |
-| F2d | 2T pulse half-amplitude duration difference | ns | reported | +35.546 | +37.897 | +41.342 | — | reported |
-| F3g | 12.5T chroma-to-luma gain, decoded/truth − 1 | % | ±2 | -45.106 | -43.502 | -41.937 | 50 | refuted |
-| F3d | 12.5T chroma-to-luma delay difference | ns | ±15 | -98.212 | -70.343 | -49.677 | 50 | refuted |
-| T1 | 0H position difference, all normal-sync lines | ns | reported | +43.856 | +54.212 | +61.400 | — | reported |
-| T2 | Burst phase at 0H (SC/H) difference | deg | reported | -17.791 | -3.247 | +6.698 | — | reported |
+| L1 | Blanking level (back porch), all normal-sync lines | IRE | ±1 | -0.253 | +0.015 | +0.298 | 0 | confirmed |
+| L2 | Sync tip level, all normal-sync lines | IRE | ±1 | -0.079 | -0.003 | +0.263 | 0 | confirmed |
+| L3b | VIRS black reference, lines 19/282 | IRE | ±1 | -0.011 | +0.002 | +0.014 | 0 | confirmed |
+| L3l | VIRS luminance reference, lines 19/282 | IRE | ±1 | -0.013 | +0.000 | +0.014 | 0 | confirmed |
+| L4 | NTC-7 white bar, line 20 | IRE | ±1 | -0.014 | +0.002 | +0.014 | 0 | confirmed |
+| L5 | NTC-7 staircase treads, line 20 | IRE | ±1 | -0.171 | -0.040 | +0.100 | 0 | confirmed |
+| C1 | VIRS chroma amplitude, decoded/truth − 1 | % | ±2 | -54.577 | -54.442 | -54.317 | 50 | refuted |
+| C2 | VIRS chroma phase relative to burst | deg | ±1 | +0.766 | +4.052 | +6.676 | 50 | refuted |
+| C3a | Staircase chroma amplitude (DG), decoded/truth − 1 | % | ±2 | -54.010 | -34.272 | -10.518 | 50 | refuted |
+| C3p | Staircase chroma phase (DP) relative to burst | deg | ±1 | -9.982 | +0.484 | +8.671 | 50 | refuted |
+| F1 0.5 | Multiburst 0.5 MHz, line 283 | dB | ±0.5 | -0.093 | -0.071 | -0.050 | 0 | confirmed |
+| F1 1 | Multiburst 1 MHz, line 283 | dB | ±0.5 | -0.309 | -0.273 | -0.247 | 0 | confirmed |
+| F1 2 | Multiburst 2 MHz, line 283 | dB | ±0.5 | -0.976 | -0.922 | -0.860 | 50 | refuted |
+| F1 3 | Multiburst 3 MHz, line 283 | dB | ±0.5 | -1.775 | -1.466 | -1.223 | 50 | refuted |
+| F1 3.58 | Multiburst 3.58 MHz, line 283 | dB | ±0.5 | -5.453 | -4.985 | -4.499 | 50 | refuted |
+| F1 4.2 | Multiburst 4.2 MHz, line 283 | dB | reported | -6.966 | -6.756 | -6.620 | — | reported |
+| F2a | 2T pulse amplitude, decoded/truth − 1 | % | reported | -13.104 | -12.327 | -11.280 | — | reported |
+| F2d | 2T pulse half-amplitude duration difference | ns | reported | +25.328 | +28.694 | +31.272 | — | reported |
+| F3g | 12.5T chroma-to-luma gain, decoded/truth − 1 | % | ±2 | -40.931 | -38.151 | -35.719 | 50 | refuted |
+| F3d | 12.5T chroma-to-luma delay difference | ns | ±15 | -66.116 | -31.198 | +2.336 | 44 | refuted |
+| T1 | 0H position difference, all normal-sync lines | ns | reported | +47.313 | +58.950 | +67.713 | — | reported |
+| T2 | Burst phase at 0H (SC/H) difference | deg | reported | -14.876 | +0.719 | +13.690 | — | reported |
 | V1 | FM codes, lines 10/273: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
 | V2 | White flags, lines 11/274: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
 | V3 | Biphase codes, lines 16-18/279-281: lines wrong | lines | ±0 | 0 | 0 | 0 | 0 | confirmed |
-| P1 | Active picture RMS difference | IRE | reported | +0.379 | +10.664 | +23.814 | — | reported |
+| P1 | Active picture RMS difference | IRE | reported | +0.541 | +11.388 | +25.060 | — | reported |
 
 Discontinuities: lead-in frames 0-1 not decoded (before the first decoded frame); pictures 50-50 not decoded (after the last decoded frame).
 
@@ -521,9 +518,9 @@ settle each unattributed discrepancy, are in
 
 | Refuted | Baselines | Class | Evidence |
 |---------|-----------|-------|----------|
-| C1, C3a, F1 3–3.58 MHz, F3g (chroma level and response) | all (F1 3.58 MHz: carrier, CAV) | Unattributed (U1, U3) | The reference decoder recovers chroma on the carrier diagnostic within 0.1 %, so the FM signal is right; ld-decode reads +15.6 % with its burst-driven correction, −9.3 % without. ld-decode is not built for MTF-free RF, and on disc RF the result depends on the DdD filter model (Task 5.3) and S11 near cut-off |
-| F3d (chroma-to-luma delay) | carrier, CAV 145 mm | Unattributed (U2) | The reference decoder with the §9.1.7 playback equaliser reads +2.9 ns on the carrier diagnostic; ld-decode adds about 116 ns against the 80 ns the pre-distortion presumes |
-| C2, C3p (chroma phase, differential phase) | all (C2: carrier, 55 mm, CLV) | Unattributed (U4) | The reference decoder reads +0.0° and within ±0.5° on the carrier diagnostic |
+| C1, C3a, F1 3.58 MHz, F3g (chroma level and response) | all (F1 3 MHz: carrier only) | Unattributed (U1, U3) | The reference decoder recovers chroma on the carrier diagnostic within 0.1 %, so the FM signal is right. ld-decode reads +15.6 % there with its burst-driven correction (−9.3 % without), and +6.9 % to +11.3 % on the disc baselines with the DdD filter fitted to the measured board. ld-decode is not built for MTF-free RF, and at 55 mm and on CLV the upper chroma sidebands lie near the optical cut-off |
+| F3d (chroma-to-luma delay) | all four (ld-decode) | Unattributed (U2) | The reference decoder with the §9.1.7 playback equaliser reads +2.9 ns on the carrier diagnostic; ld-decode adds about 116 ns against the 80 ns the pre-distortion presumes |
+| C2, C3p (chroma phase, differential phase) | all | Unattributed (U4) | The reference decoder reads +0.0° and within ±0.5° on the carrier diagnostic |
 | F2a (2T amplitude) | — | Measurement (corrected) | The truth's 2T is not band-limited, so any band-limited decoder misses ±2 % (the reference decoder reads +4.7 %); F2a is now reported, not judged |
 | Every chroma row of the MTF bisection run | `cav_inner_equalised` (diagnostic) | Measurement (the run's design) | At 55 mm the S12 equaliser tapers to zero over 10.9–13.09 MHz, where the upper chroma sideband lies |
 

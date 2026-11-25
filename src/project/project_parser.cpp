@@ -470,7 +470,8 @@ void ParseResolved(const YAML::Node& node, NodeReader* reader,
   const std::string path = "resolved";
   if (!reader->CheckMap(
           node, path,
-          {"ld_creator_version", "cvbs_sha256", "meta_sha256", "rf_sha256"})) {
+          {"ld_creator_version", "cvbs_sha256", "meta_sha256", "rf_sha256",
+           "capture_peak_to_peak", "capture_scale"})) {
     return;
   }
   for (const char* key :
@@ -486,6 +487,9 @@ void ParseResolved(const YAML::Node& node, NodeReader* reader,
   reader->ReadString(node, path, "cvbs_sha256", &record.cvbs_sha256);
   reader->ReadString(node, path, "meta_sha256", &record.meta_sha256);
   reader->ReadString(node, path, "rf_sha256", &record.rf_sha256);
+  reader->ReadDouble(node, path, "capture_peak_to_peak",
+                     &record.capture_peak_to_peak);
+  reader->ReadDouble(node, path, "capture_scale", &record.capture_scale);
   *resolved = std::move(record);
 }
 

@@ -17,12 +17,14 @@
 
 namespace ld_creator {
 
-// DomesdayDuplicator anti-alias filter (RF Amplifier sheet, rev 3.0.2;
-// register S13.filter_components). Topology from the board's netlist
-// (S13 note, "Filter model"): the OPA690 output drives R410 into node A;
-// C403 shunts A; L401 ∥ C404 joins A to B; C405 shunts B; L402 ∥ C406
-// joins B to C; C407 shunts C; R411 takes C to the ADS825 input, which is
-// unloaded (its current is neglected), so the output is the voltage at C.
+// DomesdayDuplicator anti-alias filter (RF Amplifier sheet, rev 3.0.2).
+// Topology from the board's netlist (register S13.filter_topology; S13
+// note, "Filter model"): the OPA690 output drives R410 into node A; C403
+// shunts A; L401 ∥ C404 joins A to B; C405 shunts B; L402 ∥ C406 joins B
+// to C; C407 shunts C; R411 takes C to the ADS825 input, which is unloaded
+// (its current is neglected), so the output is the voltage at C. The
+// defaults are the schematic's nominal values (register
+// S13.filter_components).
 struct DddFilterComponents {
   double r410_ohm = 47.0;
   double c403_f = 330e-12;
@@ -34,10 +36,28 @@ struct DddFilterComponents {
   double c407_f = 270e-12;
 };
 
+// Effective component values fitted to the measured board (register
+// S13.filter_fit): in the netlist's topology, with the amplifier bandwidth
+// below, they reproduce the DdD spreadsheet's sheet 1 magnitude within
+// 0.18 dB to 17.8 MHz and its sheet 2 phase within 6° to 16 MHz. They
+// describe the board's response, not its parts: the nominal values within
+// their tolerances do not reach the measurement (S13 note).
+DddFilterComponents DddFittedFilterComponents();
+
 // The LC filter's voltage transfer from the amplifier output to node C at
 // `frequency_hz`, by ladder analysis. Pure function.
 ComplexValue DddAntiAliasResponse(double frequency_hz,
                                   const DddFilterComponents& components = {});
+
+// The OPA690's closed-loop bandwidth as a single pole at GBP / noise gain:
+// 250 MHz (OPA690ID, VS = 5 V, TI SBOS223H table 6.8) / 8.5 = 29.4 MHz
+// (register S13.amplifier_bandwidth). Pure function.
+ComplexValue DddAmplifierBandwidthResponse(double frequency_hz);
+
+// The DdD's high-frequency response, which the FIR realises: the
+// amplifier's bandwidth times the LC filter. Pure function.
+ComplexValue DddHighFrequencyResponse(double frequency_hz,
+                                      const DddFilterComponents& components);
 
 // First-order sections of the DdD input (register S13.ac_coupling,
 // S13.amplifier_feedback), as continuous-time responses:
@@ -76,7 +96,8 @@ struct FirstOrderSection {
                                         double rate_hz) const;
 };
 
-// The DdD LC filter as an FIR at the readout rate Fr (S13 note,
+// The DdD high-frequency response (amplifier bandwidth and LC filter, with
+// the fitted components by default) as an FIR at the readout rate Fr (S13 note,
 // "Realisation"): the continuous response is sampled at 2^15 frequencies
 // across Fr, tapered to zero between 36 and 40 MHz by SmoothStepDown (D9
 // has no content above 35.7 MHz, so the taper changes nothing that
@@ -84,7 +105,8 @@ struct FirstOrderSection {
 // response decays fast), and inverse-transformed. Taps are kept over the
 // shortest span outside which Σ|h| is below 1e-9 of the total (register
 // S13.filter_truncation).
-FirFilter DesignDddAntiAliasFir(const DddFilterComponents& components = {});
+FirFilter DesignDddAntiAliasFir(
+    const DddFilterComponents& components = DddFittedFilterComponents());
 
 // The `ideal` profile's anti-alias low-pass at Fr (register
 // S13.ideal_filter): Kaiser-windowed sinc, cut-off 17.5 MHz, transition

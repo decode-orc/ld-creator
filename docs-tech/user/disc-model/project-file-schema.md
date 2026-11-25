@@ -46,6 +46,11 @@ relates to the model, and the keys reserved for later phases.
   frames read, so the resolved project does not depend on the file's length.
 - **Exact numbers.** Doubles are written in shortest round-trip form, so
   every value, including the computed `hfmi`, reads back bit for bit.
+- **Measured capture level.** A disc run writes the capture level its first
+  pass measured, `resolved.capture_peak_to_peak` and
+  `resolved.capture_scale` ([S13](s13-rf-capture.md), "Level"). They are a
+  record, not an input: a rerun measures them again from the same input,
+  and so writes the same values.
 
 ## Reserved for later phases
 

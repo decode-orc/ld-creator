@@ -477,8 +477,13 @@ two-dimensional linear transfer for a 0.8 µm pit.
 - **Acceptance:**
   - The computed DdD response matches the measured table (spreadsheet
     sheet 1) within the bound that the 5 % capacitor tolerance gives.
+    *Revised:* the nominal components do not, from 6.8 to 12.1 MHz, so
+    the model uses effective components fitted to sheets 1 and 2, which
+    match within 0.17 dB and 6° (S13 note, "The fit").
   - Above 20 MHz, each profile's response is down by its documented amount.
-  - No clipping on any test pattern at the default level.
+  - No clipping on any test pattern at the default level. The level is the
+    run's measured RF peak-to-peak at 75 % of full scale, as the DdD guide
+    sets it (S13 note, "Level").
 
 ### Task 5.4 — End-to-end pipeline
 - Wire S1–S14 together. Disc type and start radius come from the S8

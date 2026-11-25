@@ -152,7 +152,7 @@ The readout model gives HFMI = m·(4/π)·H(802 pits/mm), where H is the optics'
 | Key | Type | Default | Range |
 |-----|------|---------|-------|
 | `profile` | string | `domesday_duplicator` | `domesday_duplicator`: the Domesday Duplicator's input stage, anti-alias filter and 10-bit converter. `ideal`: a linear-phase low-pass (flat within 0.01 dB to 15 MHz, at least 98 dB down from 20 MHz) and a 16-bit converter |
-| `level_fraction` | float | 0.75 | 0.05–1.0: the peak-to-peak of the blanking-level carrier at the start radius, as a fraction of the converter's full scale |
+| `level_fraction` | float | 0.75 | 0.05–1.0: the run's captured RF peak-to-peak (measured in a first pass), or the carrier diagnostic's, as a fraction of the converter's full scale |
 
 ## `output`
 
@@ -204,7 +204,7 @@ Listing any other path, or a path twice, is an error. Listing a key whose value 
 
 ## The resolved project
 
-Each run writes `<rf_path>` with `.s16` replaced by `.resolved.yaml` (today, carrier-diagnostic runs only). It is a valid project file that:
+Each run writes `<rf_path>` with `.s16` replaced by `.resolved.yaml`. It is a valid project file that:
 
 - contains every block and key, with its effective value, in the order of this page;
 - gives every path as an absolute path, `input.frame_count` as the number of frames read, and `optical_readout.hfmi` as its computed value;
@@ -217,8 +217,10 @@ Each run writes `<rf_path>` with `.s16` replaced by `.resolved.yaml` (today, car
 | `resolved.cvbs_sha256` | SHA-256 of the `.cvbs` |
 | `resolved.meta_sha256` | SHA-256 of the `.meta` |
 | `resolved.rf_sha256` | SHA-256 of the RF file |
+| `resolved.capture_peak_to_peak` | Disc runs: the captured RF's peak-to-peak that the first pass measured, before scaling (see `rf_capture.level_fraction`) |
+| `resolved.capture_scale` | Disc runs: the scale applied, so that the peak-to-peak fills `level_fraction` of the converter's range |
 
-Loading a project with a `resolved:` block checks it: if the `.cvbs` or `.meta` no longer matches its hash, that is an error naming the file; a different `ld_creator_version` is a warning, because the RF may differ. Running a resolved project writes the same RF, and the same resolved project, byte for byte.
+Loading a project with a `resolved:` block checks it: if the `.cvbs` or `.meta` no longer matches its hash, that is an error naming the file; a different `ld_creator_version` is a warning, because the RF may differ. Running a resolved project writes the same RF, and the same resolved project, byte for byte. The capture level is measured again on each run; the recorded values are for information.
 
 ## What is not in the project
 

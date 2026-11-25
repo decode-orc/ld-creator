@@ -16,14 +16,23 @@ by the project's maintainer and may be used freely.
 |-------|----------|---------------------|
 | S13 | `hardware/pcb/RF Amplifier.kicad_sch` (rev 3.0.2) | Every front-end component value: termination, AC coupling, OPA690 gain network, the elliptic low-pass (two inductors, five capacitors, 47 Ω terminations) |
 | S13 | `hardware/pcb/ADC.kicad_sch` | ADS825 10-bit ADC and its reference divider |
-| S13 | `hardware/doc/DdD Gain and filter calculations.xlsx` | Measured amplitude response 10 kHz–21.5 MHz (sheet 1); measured phase 0–14.5 MHz (sheet 2), both from a real board; gain table and clip level for all 15 switch settings (sheet 3) |
+| S13 | `hardware/doc/DdD Gain and filter calculations.xlsx` | Measured amplitude response 10 kHz–21.5 MHz (sheet 1); measured phase 0–16 MHz (sheet 2), both from a real board, and the data the filter fit uses (S13.filter_fit); gain table and clip level for all 15 switch settings (sheet 3) |
 | S13 | `docs/content/development/hardware-guide.md` | Input impedance, gain theory, filter design (elliptic, −3 dB ≈ 13.8 MHz, < −35 dB at 20 MHz measured), 2 V p-p ADC window, working level 75 % of full scale, 40 MHz clock from an 80 MHz PLL |
 | S13 | `docs/content/development/fpga-decimation-filter.md` | Rationale that frequency-dependent group delay disperses FM; the 20 MSPS decimator (not used for LaserDisc) |
 | S14 | `docs/content/capture-gui/capture-files.md`; `ddd-gui/tests/unit/test_sample_format.cpp` | Capture sample format: signed 16-bit LE mono; 10-bit code *c* stored as (c − 512) × 64 |
+| S13 | `docs/content/development/hardware-testing.md` | The 75 % working level is read on the capture application's amplitude readout, √2 × RMS of the captured signal; headroom "so that signal peaks do not clip" |
+| S13 | `RF Amplifier.kicad_sch`; `Domesday Duplicator.kicad_pcb` | The OPA690 runs from a single +5 V supply, in the SOIC-8 package |
 | S12 | hardware guide, "Filter stage" | Players "often employ a filter which has a stop-band of 13.2 MHz" (not used in the reference model; recorded for the player profiles) |
 
 **Proposed upstream:** none. The repository is maintained separately and is
 the right home for this material.
+
+### Texas Instruments OPA690 datasheet (SBOS223H, revised 2024)
+
+www.ti.com/lit/ds/symlink/opa690.pdf. Table 6.8 (OPA690ID, VS = 5 V):
+gain-bandwidth product 250 MHz typical for G ≥ 10; small-signal bandwidth
+25 MHz typical at G = 10. No minimum is given. With the DdD's noise gain of
+8.5, the closed-loop pole is at 29.4 MHz (S13.amplifier_bandwidth).
 
 ### Philips Technical Review vol. 33 (1973), no. 7 — the VLP issue
 

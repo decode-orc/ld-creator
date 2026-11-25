@@ -28,7 +28,7 @@ The converter input *u* runs from −1 to +1 across its range and is quantised t
 
 ## Disc RF
 
-With `output.mode: disc` (the default), *u* is the capture device's input: the player RF after the capture profile's filters, scaled so that the blanking-level carrier at the start radius has a peak-to-peak amplitude of `level_fraction` of full scale (75 % by default: 768 codes with the Domesday Duplicator profile). Parts of the picture that the readout attenuates less than the blanking carrier, such as sync, use the headroom above it. See [Disc model](../user-manual/disc-model.md).
+With `output.mode: disc` (the default), *u* is the capture device's input: the player RF after the capture profile's filters, scaled so that the whole run's peak-to-peak is `level_fraction` of full scale (75 % by default: 768 codes with the Domesday Duplicator profile), measured in a first pass over the run. The rest of the range is headroom, so the RF does not clip. See [Disc model](../user-manual/disc-model.md).
 
 ## Carrier-diagnostic RF
 

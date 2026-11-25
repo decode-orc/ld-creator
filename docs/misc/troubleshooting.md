@@ -24,7 +24,7 @@ A warning, logged at the start of every carrier-diagnostic run as a reminder tha
 
 A warning: N samples fell outside the converter's range and were clamped to its end codes. In a carrier-diagnostic run this happens only with `rf_capture.level_fraction` at or very near 1.0, where the carrier's peaks reach full scale; lower it to leave headroom.
 
-In a disc run the level is set on the blanking-level carrier, and lower carrier frequencies come out larger, because the readout attenuates them less. Sync reaches about 85 % of full scale at the default 75 %. Video that is not a valid NTSC signal, such as a jump straight from white to sync tip, drives the carrier further down through pre-emphasis and can clip. Lower `rf_capture.level_fraction` if it does.
+In a disc run the level is measured from the run itself: its captured RF's peak-to-peak is scaled to `level_fraction` of the converter's range, leaving the rest as headroom, so a disc run at the default 75 % does not clip. A `level_fraction` near 1.0 leaves no headroom; lower it.
 
 ## "Run failed: …"
 

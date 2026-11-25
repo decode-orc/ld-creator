@@ -305,11 +305,14 @@ The stages after the cut, from the S9–S14 notes:
 - S12: `none` passes D8; `inverse` renders the same edges with a
   Kaiser-windowed band-limited step, flat to 1e-6 up to 0.843·fc.
 - S13: the DomesdayDuplicator's AC coupling and amplifier shelf as
-  bilinear first-order sections, and its LC anti-alias filter (topology
-  from the board's netlist) as a 902-tap FIR designed by inverse FFT of the
-  circuit's response; or the `ideal` profile's Kaiser low-pass. The level
-  is set analytically from the blanking carrier at the start radius. The
-  converter takes every second 80 MHz sample.
+  bilinear first-order sections, and its amplifier bandwidth and LC
+  anti-alias filter (topology from the board's netlist, effective component
+  values fitted to the measured board) as a 757-tap FIR designed by inverse
+  FFT of the circuit's response; or the `ideal` profile's Kaiser low-pass.
+  The level is measured in a first pass over the run: the captured RF's
+  peak-to-peak is scaled to 75 % of the converter's range, as the DdD
+  guide sets a capture up. The converter takes every second 80 MHz
+  sample.
 
 ---
 
@@ -416,10 +419,10 @@ differ in one stage block (planned, plan Phase 8).
 ## 7. Open questions
 
 - PAL analogue/digital audio coexistence on the low band (§3.4).
-- The computed DomesdayDuplicator filter response is 0.5–2.9 dB above the
-  measured one from 6.8 to 12.1 MHz, outside the 5 % capacitor tolerance
-  ([S13 note](../user/disc-model/s13-rf-capture.md)); calibration is plan
-  Task 10.2.
+- The DomesdayDuplicator filter is fitted to one board's measurement,
+  because the nominal components are 0.5–2.9 dB off it from 6.8 to 12.1 MHz
+  ([S13 note](../user/disc-model/s13-rf-capture.md)). The physical cause,
+  and whether other boards match, are open.
 - A disc run takes about a second per frame with eight threads; S11's edge
   sum and S13's FIR dominate. Not yet profiled (AGENTS.md §5).
 - Whether ld-creator should accept videosynth's `RAW_S16_*` high-rate presets

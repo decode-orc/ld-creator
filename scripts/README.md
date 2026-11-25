@@ -22,6 +22,7 @@ keeps Python's bytecode cache out of the source tree.
 | `round_trip.py` | The round-trip runner: videosynth, ld-creator, ld-decode, the reference demodulator and the comparator (plan Tasks 7.2 and 7.4) |
 | `reference_demod.py` | A reference NTSC demodulator written from IEC 60857 alone: FM demodulation, de-emphasis, the §9.1.7 playback equaliser and the inverse readout transfer; writes CVBS the comparator scores |
 | `test_reference_demod.py` | Self-tests of the reference demodulator on synthetic FM |
+| `fit_ddd_filter.py` | Fits the DomesdayDuplicator anti-alias filter's effective component values to the measured board (register S13.filter_fit); prints the values the model uses and the residuals |
 
 ## Independence
 
