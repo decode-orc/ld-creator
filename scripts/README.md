@@ -22,6 +22,9 @@ keeps Python's bytecode cache out of the source tree.
 | `round_trip.py` | The round-trip runner: videosynth, ld-creator, ld-decode, the reference demodulator and the comparator (plan Tasks 7.2 and 7.4) |
 | `reference_demod.py` | A reference NTSC demodulator written from IEC 60857 alone: FM demodulation, de-emphasis, the §9.1.7 playback equaliser and the inverse readout transfer; writes CVBS the comparator scores |
 | `test_reference_demod.py` | Self-tests of the reference demodulator on synthetic FM |
+| `vits_measure.py` | Absolute VITS measurements without a truth file: burst level and timing, VIRS, the NTC-7 composite and combination lines, found by content. Measures a decoded `.cvbs`, or raw RF through a line-locked IEC 60857 demodulation with an optional FM sideband fit; used on real captures |
+| `standard_burst.py` | Copies an NTSC truth with every colour burst replaced by the BT.470-6 burst (5.3 µs, 9 cycles), for the burst bisection of `docs-tech/user/ld-decode-findings.md` |
+| `test_vits_measure.py` | Self-tests of both on synthetic lines and synthetic FM |
 | `fit_ddd_filter.py` | Fits the DomesdayDuplicator anti-alias filter's effective component values to the measured board (register S13.filter_fit); prints the values the model uses and the residuals |
 
 ## Independence
@@ -144,3 +147,54 @@ python3 -E -B scripts/reference_demod.py <rf.s16> <truth.cvbs> <out.cvbs> \
 
 The recorded results are in `docs-tech/user/ntsc-round-trip-metrics.md`
 ("Results"), and the discrepancies in `docs-tech/user/ld-decode-findings.md`.
+
+## Real captures
+
+A real capture has no truth, so it is measured against the test signals'
+nominal values. `vits_measure.py` finds the NTC-7 composite, the NTC-7
+combination and VIRS by their content, because discs carry them on
+different lines.
+
+Cut an excerpt from a DomesdayDuplicator capture with ld-cut, which writes
+raw 16-bit RF at 40 MSPS (the format ld-creator writes), into the build
+directory:
+
+```bash
+nix develop "git+file://$PWD" --command ld-cut -n -s <file frame> -l <frames> \
+    <capture.ldf> build/<dir>/<excerpt>.s16
+```
+
+Then decode it with ld-decode as the round trip does, and measure the decode,
+or the RF itself:
+
+```bash
+python3 -E -B scripts/vits_measure.py cvbs <decoded.cvbs> [--frames N]
+python3 -E -B scripts/vits_measure.py rf <rf.s16> [--frames N] \
+    [--playback-equaliser] [--sidebands] [--rf-band LOW HIGH]
+```
+
+The RF mode demodulates as `reference_demod.py` does (IEC 60857 carrier
+frequencies, de-emphasis, optionally the §9.1.7 playback equaliser), but
+with no readout or capture compensation, and resamples each line to 4fsc
+from its own sync. Its default RF band starts at 4 MHz, above the analogue
+audio carriers a real disc carries. On ld-creator's carrier diagnostic it
+reproduces the truth within 0.4 % in chroma and 0.03 dB in the multiburst.
+`--sidebands` fits the burst's and each multiburst packet's first and second
+FM sidebands relative to the carrier.
+
+Running the same measurements on ld-creator RF at an excerpt's radius
+shows where ld-creator's RF and the real disc differ, independently of
+ld-decode. The recorded comparison is in
+`docs-tech/user/ld-decode-findings.md` ("The real capture").
+
+The burst bisection:
+
+```bash
+python3 -E -B scripts/standard_burst.py build/round_trip/round_trip.cvbs \
+    build/<dir>/round_trip.cvbs
+```
+
+writes a copy of the truth whose bursts start at 5.3 µs and last 9 cycles at
+their 50 % points, with the original amplitude and phase and 300 ns edges.
+Running ld-creator's round-trip projects with `--output-root build/<dir>`
+then uses it.

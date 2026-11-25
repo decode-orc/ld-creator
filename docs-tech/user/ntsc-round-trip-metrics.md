@@ -518,18 +518,22 @@ settle each unattributed discrepancy, are in
 
 | Refuted | Baselines | Class | Evidence |
 |---------|-----------|-------|----------|
-| C1, C3a, F1 3.58 MHz, F3g (chroma level and response) | all (F1 3 MHz: carrier only) | Unattributed (U1, U3) | The reference decoder recovers chroma on the carrier diagnostic within 0.1 %, so the FM signal is right. ld-decode reads +15.6 % there with its burst-driven correction (−9.3 % without), and +6.9 % to +11.3 % on the disc baselines with the DdD filter fitted to the measured board. ld-decode is not built for MTF-free RF, and at 55 mm and on CLV the upper chroma sidebands lie near the optical cut-off |
-| F3d (chroma-to-luma delay) | all four (ld-decode) | Unattributed (U2) | The reference decoder with the §9.1.7 playback equaliser reads +2.9 ns on the carrier diagnostic; ld-decode adds about 116 ns against the 80 ns the pre-distortion presumes |
-| C2, C3p (chroma phase, differential phase) | all | Unattributed (U4) | The reference decoder reads +0.0° and within ±0.5° on the carrier diagnostic |
+| C1, C3a, F1 3.58 MHz, F3g (chroma level and response) | disc baselines | Measurement (the truth); C1's residual at 145 mm and on CLV unattributed (U1) | The truth's colour burst lasts 7.25 cycles from 5.63 µs, short of the 9 ± 1 cycles from 5.3 µs that IEC 60857 §9.1.2 and BT.470-6 require (videosynth#32). ld-decode measures it low and over-corrects chroma. With the burst replaced by the standard one, and nothing else changed, F1 3.58 MHz and F3g confirm on all three disc baselines and C1 reads +0.7, +2.5 and −2.2 % (from +9.5, +11.3 and +6.9 %); C3a's spread remains (U4; ld-decode-findings.md, "The colour burst") |
+| C1, C3a, F1 3.58 MHz, F3g (chroma level and response) | carrier only | Unattributed (U1, U3) | The reference decoder recovers chroma on the carrier diagnostic within 0.1 %, so the FM signal is right. ld-decode reads +15.6 % there with its burst-driven correction (−9.3 % without). ld-decode is not built for MTF-free RF |
+| F3d (chroma-to-luma delay) | all four (ld-decode) | Unattributed (U2) | The reference decoder with the §9.1.7 playback equaliser reads +2.9 ns on the carrier diagnostic; ld-decode adds about 116 ns against the 80 ns the pre-distortion presumes. On a real disc (GGV1069), whose RF timing matches ld-creator's, ld-decode shows a similar delay, but that disc's own VITS timing is unknown |
+| C2, C3p, and C3a's spread on disc RF (chroma phase, differential phase and gain) | all | Unattributed (U4) | The reference decoder reads +0.0° and within ±0.5° on the carrier diagnostic |
 | F2a (2T amplitude) | — | Measurement (corrected) | The truth's 2T is not band-limited, so any band-limited decoder misses ±2 % (the reference decoder reads +4.7 %); F2a is now reported, not judged |
 | Every chroma row of the MTF bisection run | `cav_inner_equalised` (diagnostic) | Measurement (the run's design) | At 55 mm the S12 equaliser tapers to zero over 10.9–13.09 MHz, where the upper chroma sideband lies |
 
 No discrepancy is a model finding: S2–S5 decode to the truth through the
 reference decoder, and S6–S13 do too at 145 mm with the `ideal` capture.
 None is a lead-in shortfall: every failing measurement fails on all 49
-programme frames. None is yet a decoder finding: ld-decode is calibrated on
-real discs, so attributing a discrepancy to it needs a real capture (see
-"Triage classes").
+programme frames. None is a decoder finding: ld-decode is calibrated on
+real discs, and the one real capture compared (Pioneer GGV1069) is one
+disc's mastering, which cannot show what real discs in general carry (see
+"Triage classes" and ld-decode-findings.md, "The real capture"). The
+results above use the pinned videosynth, short burst included, until its
+burst is corrected and the pin updated.
 
 ## Triage classes
 
@@ -539,4 +543,4 @@ real discs, so attributing a discrepancy to it needs a real capture (see
 | Lead-in shortfall | Failures are confined to the first programme frames and stop once the decoder has settled. Lengthen the lead-in and rerun |
 | Decoder finding | Every stage conforms to its note, the RF is shown to carry the right signal, and real-disc evidence shows that the RF resembles a real disc where the failure arises (a real capture decoded with the same settings settles the same way, or the decoder's behaviour is wrong on real discs too). Recorded with the evidence in `ld-decode-findings.md` |
 | Unattributed | Every stage conforms to its note and the RF carries the IEC 60857 signal, but the decoder disagrees, and nothing yet shows whether ld-creator's IEC-nominal disc or the decoder's calibration departs from real discs. The decoder is calibrated on real discs, not on the standard, so conformance to the standard alone does not make the decoder wrong. Held open, with the evidence and what would settle it, in `ld-decode-findings.md` |
-| Measurement | The comparator is wrong. Fix it, and check it against the truth-against-truth and +2 IRE tests (Task 7.2) |
+| Measurement | The comparator, or the truth it compares against, is wrong. Fix the comparator, and check it against the truth-against-truth and +2 IRE tests (Task 7.2); a truth that departs from its standard is reported against videosynth and shown by a bisection run with the truth corrected |

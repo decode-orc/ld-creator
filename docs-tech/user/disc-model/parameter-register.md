@@ -221,7 +221,7 @@ DdD = DomesdayDuplicator repository, commit `0f015fa0c5d7`.
 | S8.edge_profile, S8.length_bias | Model form and a bound now sourced (Isailović 1985 App. 2.2, §2.3.1.6); values still need resist and spot data: Jacobs (Applied Optics 1978); Pasman et al. (SPIE 529, 1985); Bouwhuis et al. (1985), Mastering chapter |
 | S9.copy, S9.pit_geometry | Mechanisms sourced (Isailović 1985 §2.3, §6.2: edge blur by metallization, bump shape); values need Bouwhuis et al. (1985), Legierse & Pasman (1989), or measurement of a pressed disc |
 | S11.model (linear) | Plan Task 10.1, with Hopkins (JOSA 1979) or Bouwhuis et al. (1985), "Read-out of optical discs" |
-| S13 quantiser transition points | ADS825 datasheet |
+| S13 quantiser transition points | The ADS825 datasheet (TI SBAS069B) gives no per-code transitions, only DNL and INL bounds, so the declared `Q` stands; a measured ADC (code histogram) would resolve it |
 | S13.filter_fit (one board) | Fitted to one board's measurement; the physical cause of the nominal model's 0.5–2.9 dB gap is unknown. A network-analyser measurement of a second board would show whether the fit is typical |
 
 The candidate sources are described in
