@@ -595,10 +595,15 @@ For each refuted prediction:
 *Revised:* the "Unattributed" class was added during Phase 7, and the
 four chroma discrepancies (U1–U4) were held there until a real capture was
 compared. A DomesdayDuplicator capture of Pioneer GGV1069 then traced U1 on
-disc RF to the truth's colour burst, which is shorter than the standard
-allows (Measurement class; videosynth#32). U1 on the carrier diagnostic and
-U2–U4 remain unattributed: one disc cannot show whether ld-decode or the
-IEC-nominal disc departs from real discs in general.
+disc RF to the truth's colour burst, which was shorter than the standard
+allows (Measurement class; videosynth#32). With videosynth's fix pinned,
+ld-decode's chroma level is confirmed on the CAV disc baselines. U1 on the
+carrier diagnostic and on CLV, and U2–U4, remain unattributed. Seven more
+captures from the same player (six discs in all) show that real discs
+differ by about 3 dB in recorded chroma and 30 ns in chroma timing. The
+IEC-nominal disc lies within or at the edge of that spread. No disc's own
+VITS are known, so the discs cannot show whether ld-decode or the nominal
+disc is right.
 
 ---
 

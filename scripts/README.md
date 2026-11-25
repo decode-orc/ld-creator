@@ -23,8 +23,9 @@ keeps Python's bytecode cache out of the source tree.
 | `reference_demod.py` | A reference NTSC demodulator written from IEC 60857 alone: FM demodulation, de-emphasis, the §9.1.7 playback equaliser and the inverse readout transfer; writes CVBS the comparator scores |
 | `test_reference_demod.py` | Self-tests of the reference demodulator on synthetic FM |
 | `vits_measure.py` | Absolute VITS measurements without a truth file: burst level and timing, VIRS, the NTC-7 composite and combination lines, found by content. Measures a decoded `.cvbs`, or raw RF through a line-locked IEC 60857 demodulation with an optional FM sideband fit; used on real captures |
-| `standard_burst.py` | Copies an NTSC truth with every colour burst replaced by the BT.470-6 burst (5.3 µs, 9 cycles), for the burst bisection of `docs-tech/user/ld-decode-findings.md` |
+| `standard_burst.py` | Copies an NTSC truth with every colour burst replaced by the BT.470-6 burst (5.3 µs, 9 cycles), for the burst bisection of `docs-tech/user/ld-decode-findings.md`. The pinned videosynth's burst is already standard, so it matters only for truths from earlier videosynth versions |
 | `test_vits_measure.py` | Self-tests of both on synthetic lines and synthetic FM |
+| `capture_survey.py` | Cuts, decodes and measures the same excerpt of several captures (and ld-creator RF) and tabulates them side by side, for the multi-disc comparison of `docs-tech/user/ld-decode-findings.md` ("Other discs") |
 | `fit_ddd_filter.py` | Fits the DomesdayDuplicator anti-alias filter's effective component values to the measured board (register S13.filter_fit); prints the values the model uses and the residuals |
 
 ## Independence
@@ -186,6 +187,21 @@ Running the same measurements on ld-creator RF at an excerpt's radius
 shows where ld-creator's RF and the real disc differ, independently of
 ld-decode. The recorded comparison is in
 `docs-tech/user/ld-decode-findings.md` ("The real capture").
+
+To compare several captures at once:
+
+```bash
+nix develop "git+file://$PWD" --command python3 -E -B scripts/capture_survey.py \
+    --output-dir build/captures --start 1000 --frames 40 \
+    "<label>=<capture.ldf or .raw.oga or .s16>" ...
+```
+
+It cuts each capture (an `.s16` is used as it is), decodes it with
+`ld-decode --NTSC` and with `--no_auto_chroma`, measures both decodes and
+the RF, reads ld-decode's calibration and lock from its log, and writes one
+column per source to `<output-dir>/survey.md`. Steps whose output exists
+are skipped. The recorded survey is in the findings document ("Other
+discs").
 
 The burst bisection:
 

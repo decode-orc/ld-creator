@@ -69,11 +69,13 @@ class BurstTest(unittest.TestCase):
 class LineTest(unittest.TestCase):
     def virs_line(self, chroma_phase):
         line = line_with_burst(5.3, 9)
-        line[(T >= 9.15) & (T < 35.5)] += 70.0
-        chroma = (T >= 10.1) & (T < 34.5)
+        # IEC 60857 Figure 6b: chroma reference on a 70 IRE pedestal
+        # 12-36 µs, luminance reference 36-48 µs, black reference 48-60 µs.
+        line[(T >= 12.0) & (T < 36.0)] += 70.0
+        chroma = (T >= 12.0) & (T < 36.0)
         line[chroma] += subcarrier(20.0, chroma_phase)[chroma]
-        line[(T >= 35.5) & (T < 48.7)] += 50.0
-        line[(T >= 48.7) & (T < 62.0)] += 7.5
+        line[(T >= 36.0) & (T < 48.0)] += 50.0
+        line[(T >= 48.0) & (T < 60.0)] += 7.5
         return line
 
     def test_virs_is_found_and_measured(self):

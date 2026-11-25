@@ -301,10 +301,10 @@ SYNC_TIP = (1.0, 3.7)        # sync 0-4.7 µs (SMPTE 170M)
 BACK_PORCH = (8.2, 9.0)      # after the burst (5.3-7.8 µs), before 9.15 µs
 BURST = (5.7, 7.4)
 
-VIRS_LINES = (19, 282)       # VIRS, 9.15-62 µs
-VIRS_CHROMA = (12.0, 33.0)   # chroma reference 10.1-34.5 µs (1 µs ramps)
-VIRS_LUMINANCE = (37.0, 47.5)  # luminance reference 35.5-48.7 µs
-VIRS_BLACK = (50.0, 60.5)    # black reference 48.7-62 µs
+VIRS_LINES = (19, 282)       # VIRS, 12-60 µs (IEC 60857 Figure 6b)
+VIRS_CHROMA = (14.0, 34.0)   # chroma reference 12-36 µs (1 µs ramps)
+VIRS_LUMINANCE = (36.7, 47.3)  # luminance reference 36-48 µs
+VIRS_BLACK = (48.7, 59.3)    # black reference 48-60 µs
 
 COMPOSITE_LINE = 20          # NTC-7 composite
 WHITE_BAR = (14.0, 28.0)     # 12-30 µs

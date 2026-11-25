@@ -3,8 +3,9 @@
 """Copy an NTSC truth with its colour bursts replaced by the standard burst.
 
 A bisection tool for the round trip (ld-decode-findings.md, "The colour
-burst"). The pinned videosynth renders a burst of about 7.3 cycles at its
-50 % points (videosynth#32); IEC 60857 §9.1.2 calls for the EIA burst, which
+burst"). videosynth before `cd9e698` rendered a burst of about 7.3 cycles at
+its 50 % points (videosynth#32, now fixed, so on the pinned truth this is
+close to a no-op); IEC 60857 §9.1.2 calls for the EIA burst, which
 ITU-R BT.470-6 Table 2 items 2.14g/h give for M/NTSC as a start 5.3 µs after
 0H and a duration of 9 cycles, both at the envelope's 50 % points. This
 writes a copy of the truth in which every line's burst has that start and

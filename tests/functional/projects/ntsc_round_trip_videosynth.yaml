@@ -45,6 +45,8 @@ sections:
       area: lead_in
       codes:
         - code_type: lead_in
+        # IEC 60857 §10.2.3: FM picture number 0 throughout the lead-in.
+        - code_type: fm_picture_number
         - code_type: fm_white_flag
 
   - name: Bars75

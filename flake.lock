@@ -118,11 +118,11 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1795453003,
-        "narHash": "sha256-3BoB7jKM4Xr2glqJ36AP3dyWHA6LpwIu36xappnKxNQ=",
+        "lastModified": 1795607744,
+        "narHash": "sha256-eQ4vgDghj2BLj20xg4ToXjEeUg3eHZbr5vXA6RGeAmQ=",
         "owner": "decode-orc",
         "repo": "videosynth",
-        "rev": "a9957262e9aa23ffa5d89cb2a66760506db48462",
+        "rev": "cd9e698b08965f0d6dd2195c456e121f1dbdc53b",
         "type": "github"
       },
       "original": {
