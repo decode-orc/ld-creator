@@ -119,7 +119,7 @@
       },
       "locked": {
         "lastModified": 1795607744,
-        "narHash": "sha256-eQ4vgDghj2BLj20xg4ToXjEeUg3eHZbr5vXA6RGeAmQ=",
+        "narHash": "sha256-ipLnSaSFImefT34x3Gq1sudeB04tNSr7XH0SZzPWLzY=",
         "owner": "decode-orc",
         "repo": "videosynth",
         "rev": "cd9e698b08965f0d6dd2195c456e121f1dbdc53b",
